@@ -1,4 +1,4 @@
-RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/sparc-rtems4.11/sis
+RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/mpc8309som
 
 include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 
@@ -15,7 +15,7 @@ $(BUILDDIR):
 	mkdir $(BUILDDIR)
 
 $(APP): $(APP_OBJS)
-	$(CCLINK) $^ -o $@ -ldemo -lftpd -ltelnetd -lnfs
+	$(CCLINK) $^ -o $@ -ldemo -lftpd -ltelnetd -lquicc -lnfs
 
 $(BUILDDIR)/app.bin: $(APP)
 	$(OBJCOPY) -O binary $^ $@
@@ -25,6 +25,7 @@ $(BUILDDIR)/app.bin.gz: $(BUILDDIR)/app.bin
 
 $(BUILDDIR)/app.img: $(BUILDDIR)/app.bin.gz
 	mkimage -A ppc -O rtems -T kernel -a 0x10000 -e 0x10000 -n RTEMS -d $^ $@ 1>/dev/null
+#mkimage -A ppc -O rtems -T kernel -a 0x0 -e 0x4000 -n RTEMS -d $^ $@ 1>/dev/null
 
 $(IMAGE): $(BUILDDIR)/app.img
 	test -d $(dir $(IMAGE)) && cp $^ $@ || true

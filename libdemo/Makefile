@@ -1,31 +1,4 @@
-RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/sparc-rtems4.11/sis
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/nios2-rtems4.11/nios2_alt
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/nios2-rtems4.11/BES3_FPGA_DEV_2AGX125_Q-1312-2.2
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/nios2-rtems4.11/BES3_FPGA_DEV_2AGX125_Q-1312-2.4
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/nios2-rtems4.11/BES3_FPGA_DEV_2AGX125_Q-1312-2.5
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/nios2-rtems4.11/BES3_FPGA_DEV_2AGX125_Q-1312-2.6
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc2362
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc24xx_ea
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc24xx_ncs_ram
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc24xx_ncs_rom_ext
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc24xx_ncs_rom_int
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc32xx_mzx
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc32xx_mzx
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc32xx_mzx_stage_2
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/arm-rtemseabi4.11/lpc32xx_phycore
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/brs5l
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.10/powerpc-rtems4.10/brs5l
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/dp2
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/mpc5674fevb
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/mpc5566evb
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.10/powerpc-rtems4.10/mpc5566evb
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/gwlcfm
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/mpc8313erdb
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/mpc8309som
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/pm520_ze30
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/qoriq_p1020rdb
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/qoriq_core_0
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/qoriq_core_1
+RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/mpc8309som
 
 include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 
