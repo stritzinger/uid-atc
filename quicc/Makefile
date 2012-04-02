@@ -60,8 +60,8 @@ quicc-regs.h: quicc-regs.txt convert.py
 
 install:  all
 	mkdir -p $(PROJECT_INCLUDE)/quicc
-	install -m 644 -t $(PROJECT_LIB) $(LIB).a
-	install -m 644 -t $(PROJECT_INCLUDE)/quicc *.h
+	install -m 644 $(LIB).a $(PROJECT_LIB)
+	install -m 644 *.h $(PROJECT_INCLUDE)/quicc
 
 clean:
 	rm -rf $(BUILDDIR)
