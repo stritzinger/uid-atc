@@ -4,8 +4,6 @@ include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 
 IMAGE = /tftpboot/app.img
 
-OPTFLAGS = -O2 -g
-
 LIB = $(BUILDDIR)/libquicc
 LIB_PIECES =
 LIB_PIECES += quicc
