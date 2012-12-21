@@ -67,7 +67,7 @@ struct rtems_ftpd_configuration rtems_ftpd_configuration = {
   .tasks_count = 4,
 
   /* Idle timeout in seconds  or 0 for no (infinite) timeout */
-  .idle = 0,
+  .idle = 5 * 60,
 
   /* Access: 0 - r/w, 1 - read-only, 2 - write-only, 3 - browse-only */
   .access = 0

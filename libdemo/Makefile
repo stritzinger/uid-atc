@@ -1,4 +1,4 @@
-RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/mpc8309som
+RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/br_uid
 
 include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 
@@ -29,6 +29,7 @@ LIB_PIECES = \
 	demo-start-network-echo \
 	demo-start-network-flood \
 	demo-start-network-echo-mcast \
+	demo-start-network-media-status \
 	demo-telnetd \
 	demo-tftpfs \
 	demo-usb-media \

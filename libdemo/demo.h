@@ -84,7 +84,13 @@ void demo_start_add(demo_start_entry *entry);
 
 rtems_status_code demo_initialize_shell(rtems_task_priority priority, size_t stack_size);
 
-rtems_status_code demo_initialize_network(rtems_task_priority priority, const char mac_address [6], const char *ip_self, const char *ip_server, const char *netmask);
+rtems_status_code demo_initialize_network(
+  rtems_task_priority priority,
+  const char mac_address [6],
+  const char *ip_self,
+  const char *ip_gateway,
+  const char *ip_netmask
+);
 
 rtems_status_code demo_initialize_network_bootp(rtems_task_priority priority, const char mac_address [6], void (*bootp)(void));
 
@@ -105,6 +111,8 @@ rtems_status_code demo_initialize_network_echo(rtems_task_priority priority, uin
 rtems_status_code demo_initialize_network_flood(rtems_task_priority priority, const char *ip, uint16_t port);
 
 rtems_status_code demo_initialize_network_echo_mcast(rtems_task_priority priority, const char *ip, uint16_t port);
+
+rtems_status_code demo_initialize_network_media_status(rtems_task_priority priority);
 
 rtems_status_code demo_copy_file(const char *src, const char *dest);
 
@@ -137,6 +145,8 @@ void demo_start_network_echo(rtems_task_priority priority, uint16_t port);
 void demo_start_network_flood(rtems_task_priority priority, const char *ip, uint16_t port);
 
 void demo_start_network_echo_mcast(rtems_task_priority priority, const char *ip, uint16_t port);
+
+void demo_start_network_media_status(rtems_task_priority priority);
 
 void demo_start_loadelf(const char *remote, const char *local, demo_jump jump);
 

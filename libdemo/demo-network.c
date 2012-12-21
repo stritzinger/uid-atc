@@ -84,18 +84,24 @@ struct rtems_bsdnet_config rtems_bsdnet_config = {
   .tcp_rx_buf_size = 0
 };
 
-rtems_status_code demo_initialize_network(rtems_task_priority priority, const char mac_address [6], const char *ip_self, const char *ip_server, const char *netmask)
+rtems_status_code demo_initialize_network(
+  rtems_task_priority priority,
+  const char mac_address [6],
+  const char *ip_self,
+  const char *ip_gateway,
+  const char *ip_netmask
+)
 {
   int rv = 0;
 
   rtems_bsdnet_config.network_task_priority = priority;
-  rtems_bsdnet_config.gateway = ip_server;
-  rtems_bsdnet_config.log_host = ip_server;
-  rtems_bsdnet_config.name_server [0] = ip_server;
-  rtems_bsdnet_config.ntp_server [0] = ip_server;
+  rtems_bsdnet_config.gateway = ip_gateway;
+  rtems_bsdnet_config.log_host = ip_gateway;
+  rtems_bsdnet_config.name_server [0] = ip_gateway;
+  rtems_bsdnet_config.ntp_server [0] = ip_gateway;
   rtems_bsdnet_config.ifconfig->hardware_address = mac_address;
   rtems_bsdnet_config.ifconfig->ip_address = ip_self;
-  rtems_bsdnet_config.ifconfig->ip_netmask = netmask;
+  rtems_bsdnet_config.ifconfig->ip_netmask = ip_netmask;
 
   rv = rtems_bsdnet_initialize_network();
   RTEMS_CHECK_RV_SC(rv, "initialize network");

@@ -22,8 +22,9 @@
 #include <rtems/shell.h>
 
 #include <local/demo.h>
+#include <local/network-config.h>
 
-static const char mac_address [6] = { 0x00, 0x1a, 0xf1, 0x00, 0x07, 0xa4 };
+static const char mac_address [6] = NETWORK_MAC_ADDRESS;
 
 static void Init(rtems_task_argument arg)
 {
@@ -32,7 +33,13 @@ static void Init(rtems_task_argument arg)
   printk("Init\n");
 
   demo_network_set_buffer_space(512 * 1024, 512 * 1024);
-  demo_initialize_network(80, mac_address, "192.168.96.93", "192.168.96.1", "255.255.255.0");
+  demo_initialize_network(
+    80,
+    mac_address,
+    NETWORK_IP_SELF,
+    NETWORK_IP_GATEWAY,
+    NETWORK_IP_NETMASK
+  );
 
   demo_initialize_ftpfs(true, 10);
 
@@ -50,6 +57,8 @@ static void Init(rtems_task_argument arg)
 
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_STUB_DRIVER
+#define CONFIGURE_APPLICATION_NEEDS_ZERO_DRIVER
 
 #define CONFIGURE_USE_IMFS_AS_BASE_FILESYSTEM
 

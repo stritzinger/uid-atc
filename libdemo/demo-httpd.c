@@ -39,7 +39,7 @@
 
 #include <rtems.h>
 
-#ifdef RTEMS_NETWORKING
+#if defined(RTEMS_NETWORKING) && defined(RTEMS_POSIX_API)
 
 #include <stdio.h>
 
@@ -49,29 +49,44 @@
 
 #include "demo.h"
 
-static void cpuuse(
+static void *cpuuse(
+  enum mg_event event,
   struct mg_connection *con,
-  const struct mg_request_info *info,
-  void *arg
+  const struct mg_request_info *request_info
 )
 {
-  static const char begin [] =
-    "<html><head><title>CPU Usage</title></head><body><pre>";
-  static const char end [] = "</pre></body></html>";
+  if (event == MG_NEW_REQUEST) {
+    static const char uri [] = "/index.html";
+    int match = strncmp(request_info->uri, uri, sizeof(uri));
 
-  mg_write(con, begin, sizeof(begin));
-  rtems_cpu_usage_report_with_plugin(con, (rtems_printk_plugin_t) mg_printf);
-  mg_write(con, end, sizeof(end));
+    if (match == 0) {
+      static const char begin [] =
+        "<html><head><title>CPU Usage</title></head><body><pre>";
+      static const char end [] = "</pre></body></html>";
+
+      mg_write(con, begin, sizeof(begin));
+      rtems_cpu_usage_report_with_plugin(con, (rtems_printk_plugin_t) mg_printf);
+      mg_write(con, end, sizeof(end));
+
+      /* Mark as processed */
+      return "";
+    }
+  }
+
+  return NULL;
 }
 
 rtems_status_code demo_initialize_httpd(rtems_task_priority priority)
 {
-  struct mg_context *ctx = mg_start();
+  static const char *options [] = {
+    "listening_ports", "80",
+    "document_root", "/",
+    "num_threads", "1",
+    NULL
+  };
+  struct mg_context *ctx = mg_start(cpuuse, NULL, options);
 
   if (ctx != NULL) {
-    mg_set_option(ctx, "ports", "80");
-    mg_set_uri_callback(ctx, "/index.html", cpuuse, NULL);
-
     return RTEMS_SUCCESSFUL;
   } else {
     return RTEMS_NO_MEMORY;

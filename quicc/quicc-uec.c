@@ -265,7 +265,7 @@ static void init_mii(quicc_uec_context *self, quicc_ucf_context *ucf_context, co
 	volatile quicc_ucf *ucf_regs = ucf_context->ucf_regs;
 
 	quicc_set_mii_clock_source(context, ucf_context->config->index);
-	ucf_regs->miimcfg = QUICC_UCF_MIIMCFG_CLOCK_SELECT(0xf);
+	ucf_regs->miimcfg = QUICC_UCF_MIIMCFG_CLOCK_SELECT(0x7);
 }
 
 static void init_bd(quicc_uec_context *self, quicc_ucf_context *ucf_context, const quicc_uec_config *uec_config)

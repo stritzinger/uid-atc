@@ -38,8 +38,11 @@
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 
+#include <mpc83xx/mpc83xx.h>
+
 #include <bsp.h>
 #include <bsp/irq.h>
+#include <bsp/utility.h>
 
 #include "quicc.h"
 
@@ -103,13 +106,13 @@ static void uec_if_interrupt_handler(void *arg)
 
   if ((ucce & rx_flags) != 0) {
     ++self->stats.rx_interrupts;
-    sc = rtems_event_send(self->rx_task_id, event);
+    sc = rtems_bsdnet_event_send(self->rx_task_id, event);
     ASSERT_SC(sc);
   }
 
   if ((ucce & tx_flags) != 0) {
     ++self->stats.tx_interrupts;
-    sc = rtems_event_send(self->tx_task_id, event);
+    sc = rtems_bsdnet_event_send(self->tx_task_id, event);
     ASSERT_SC(sc);
   }
 }
@@ -389,14 +392,62 @@ static void uec_if_tx_task(void *arg)
   }
 }
 
+static void uec_if_pin_config(void)
+{
+  #ifdef MPC83XX_BOARD_BR_UID
+    int phy_reset_pin = 36;
+    volatile m83xxGPIORegisters_t *gpio = &mpc83xx.gpio[phy_reset_pin / 32];
+    volatile m83xxSysConRegisters_t *syscon = &mpc83xx.syscon;
+    uint32_t gpio_bit = BSP_BBIT32(phy_reset_pin % 32);
+    uint32_t sicr_2 = mpc83xx.syscon.sicrh;
+
+    /* Set pin function of FEC1 block */
+    syscon->sicrl = BSP_BFLD32SET(syscon->sicrl, 0x0, 28, 29);
+
+    /* Disable pull-up for FEC1 block */
+    syscon->gpr_1 |= BSP_BBIT32(1);
+
+    /* Set pin function of USB_D block */
+    syscon->sicrh = BSP_BFLD32SET(syscon->sicrh, 0x2, 12, 13);
+
+    gpio->gpimr &= ~gpio_bit;
+    gpio->gpdr &= ~gpio_bit;
+    gpio->gpdir |= gpio_bit;
+    gpio->gpdat &= ~gpio_bit;
+
+    /* FIXME */
+    rtems_task_wake_after(1);
+
+    gpio->gpdat |= gpio_bit;
+
+    /* FIXME */
+    rtems_task_wake_after(1);
+  #endif
+}
+
+static void uec_if_phy_init(uec_if_context *self)
+{
+  quicc_uec_context *uec_context = &self->uec_context;
+  uint16_t val = quicc_uec_mii_read(uec_context, self->uec_config.phy_address, MII_BMCR);
+
+  val = (uint16_t) (val & ~(BMCR_PDOWN | BMCR_ISO));
+
+  quicc_uec_mii_write(uec_context, self->uec_config.phy_address, MII_BMCR, val);
+}
+
 static void uec_if_interface_init(void *arg)
 {
   uec_if_context *self = arg;
   struct ifnet *ifp = &self->arpcom.ac_if;
 
+  uec_if_pin_config();
+
   quicc_irq_init(quicc_init());
   quicc_ucf_init(&self->ucf_context, &self->ucf_config);
   quicc_uec_init(&self->uec_context, &self->ucf_context, &self->uec_config);
+
+  uec_if_phy_init(self);
+
   quicc_uec_set_mac_address(&self->uec_context, self->arpcom.ac_enaddr);
   quicc_uec_mac_enable(&self->uec_context, QUICC_DIR_RX_AND_TX);
   quicc_ucf_enable(&self->ucf_context, QUICC_DIR_RX_AND_TX);
@@ -668,7 +719,7 @@ static void uec_if_interface_start(struct ifnet *ifp)
 
   ifp->if_flags |= IFF_OACTIVE;
 
-  sc = rtems_event_send(self->tx_task_id, UEC_IF_EVENT_TX_START);
+  sc = rtems_bsdnet_event_send(self->tx_task_id, UEC_IF_EVENT_TX_START);
   ASSERT_SC(sc);
 }
 
@@ -747,7 +798,11 @@ static void uec_if_attach(struct rtems_bsdnet_ifconfig *config)
   self->uec_config.max_rx_buf_len = MCLBYTES;
   self->uec_config.bd_arg = self;
   self->uec_config.fill_rx_bd = uec_if_bd_rx_fill;
+#if defined(MPC83XX_BOARD_MPC8309SOM)
   self->uec_config.phy_address = 0x11;
+#elif defined(MPC83XX_BOARD_BR_UID)
+  self->uec_config.phy_address = 0x1;
+#endif
 
   /* Copy MAC address */
   memcpy(self->arpcom.ac_enaddr, config->hardware_address, ETHER_ADDR_LEN);

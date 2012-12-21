@@ -1,13 +1,11 @@
 /**
  * @file
  *
- * @ingroup demo
- *
- * @brief Shell configuration.
+ * @brief Network configuration.
  */
 
 /*
- * Copyright (c) 2010-2011 embedded brains GmbH.  All rights reserved.
+ * Copyright (c) 2012 embedded brains GmbH.  All rights reserved.
  *
  *  embedded brains GmbH
  *  Obere Lagerstr. 30
@@ -37,17 +35,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef DEMO_SHELL_BLOCK_DEVICES_H
-#define DEMO_SHELL_BLOCK_DEVICES_H
+#ifndef NETWORK_CONFIG_H
+#define NETWORK_CONFIG_H
 
-#include <local/demo-shell-minimal.h>
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
 
-#define CONFIGURE_SHELL_COMMAND_FDISK
-#define CONFIGURE_SHELL_COMMAND_BLKSYNC
-#define CONFIGURE_SHELL_COMMAND_MSDOSFMT
-#define CONFIGURE_SHELL_COMMAND_MOUNT
-#define CONFIGURE_SHELL_COMMAND_UNMOUNT
-#define CONFIGURE_SHELL_COMMAND_LSOF
-#define CONFIGURE_SHELL_COMMAND_BLKSTATS
+#define NETWORK_MAC_ADDRESS { 0x0e, 0xb0, 0xba, 0x5e, 0xba, 0x11 }
 
-#endif /* DEMO_SHELL_BLOCK_DEVICES_H */
+#define NETWORK_IP_SELF "192.168.100.50"
+
+#define NETWORK_IP_GATEWAY "192.168.100.254"
+
+#define NETWORK_IP_NETMASK "255.255.255.0"
+
+#define NETWORK_IP_SERVER "192.168.100.11"
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+#endif /* NETWORK_CONFIG_H */

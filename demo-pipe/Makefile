@@ -1,5 +1,4 @@
-#RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/mpc8309som
-RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/sparc-rtems4.11/sis
+RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/br_uid
 
 include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 
