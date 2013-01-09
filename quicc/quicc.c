@@ -105,7 +105,7 @@ void quicc_execute_command(
 	unlock(self);
 }
 
-static void reset(quicc_context *self)
+void quicc_reset(quicc_context *self)
 {
 	quicc_execute_command(
 		self,
@@ -157,7 +157,7 @@ quicc_context *quicc_init(void)
 
 		clear_muram(self);
 		load_microcode(self);
-		reset(self);
+		quicc_reset(self);
 		timestamp_init(self);
 		sdma_init(self);
 	}

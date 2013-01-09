@@ -174,6 +174,8 @@ static inline bool quicc_is_power_of_two(int value)
 
 quicc_context *quicc_init(void);
 
+void quicc_reset(quicc_context *self);
+
 void quicc_set_mii_clock_source(quicc_context *self, int ucc_index);
 
 ssize_t quicc_muram_allocate_offset(quicc_context *self, size_t size, size_t align);
