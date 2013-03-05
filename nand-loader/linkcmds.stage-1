@@ -1,0 +1,12 @@
+MEMORY {
+	RESCONF : ORIGIN = 0x0, LENGTH = 0x100
+	VECTORS : ORIGIN = 0x100, LENGTH = 0x4
+	START : ORIGIN = 0x104, LENGTH = 0x1000 - 0x104
+	WORK : ORIGIN = 0x10000, LENGTH = 256M - 0x10000
+	ROM : ORIGIN = 0xfe000000, LENGTH = 2M
+}
+
+INCLUDE linkcmds.mpc83xx
+
+nand_loader_section_data_end = bsp_section_data_end;
+bsp_section_data_end = bsp_section_text_begin;
