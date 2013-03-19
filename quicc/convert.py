@@ -21,6 +21,8 @@ base = ''
 
 namespace = ''
 
+header_guard = ''
+
 structOffsets = ''
 
 isUnion = 0
@@ -132,8 +134,12 @@ def changeState(name, newState):
 def openNamespace(name, addr):
 	global base
 	global namespace
+	global header_guard
 	changeState(name, State.NAMESPACE)
 	namespace = name
+	if len(name) > 0:
+		header_guard = name.upper() + '_REGS_H';
+		print '#ifndef %s\n#define %s\n\n#include <bsp/utility.h>\n' % (header_guard, header_guard)
 	if len(name) > 0:
 		addName('base')
 		base = PREFIX
@@ -213,8 +219,6 @@ def addBit(bit, name):
 	print '#define %s BSP_BBIT%i(%s)' % (PREFIX, regSizeInBits, bit)
 	delName()
 
-print '#ifndef QUICC_REGS_H\n#define QUICC_REGS_H\n\n#include <bsp/utility.h>\n'
-
 for line in sys.stdin.readlines():
 	m = re.match('(\\w*)\\{([0-9a-fA-F]+)\\}', line)
 	if m:
@@ -265,4 +269,5 @@ if len(instances) > 0:
 	print '} ' + namespace.lower() + ';\n'
 	print '#define %s (*(volatile %s *) (%s))\n' % (namespace.upper(), namespace.lower(), base)
 
-print '#endif /* QUICC_REGS_H */'
+if len(header_guard) > 0:
+	print '#endif /* %s */' % (header_guard)
