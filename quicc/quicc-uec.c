@@ -144,10 +144,10 @@ void quicc_uec_stop(const quicc_uec_context *uec_context, quicc_direction dir)
 
 	if (quicc_direction_includes_receive(dir)) {
 		rx_global_param->typeorlen_rxgstpack &= ~QUICC_UEC_RX_GPARAM_RXGSTPACK;
-
-		do {
-			quicc_uec_execute_command(uec_context, QUICC_CMD_FAST_GRACEFUL_STOP_RX, 0);
-		} while ((rx_global_param->typeorlen_rxgstpack & QUICC_UEC_RX_GPARAM_RXGSTPACK) == 0);
+		quicc_uec_execute_command(uec_context, QUICC_CMD_FAST_GRACEFUL_STOP_RX, 0);
+		while ((rx_global_param->typeorlen_rxgstpack & QUICC_UEC_RX_GPARAM_RXGSTPACK) == 0) {
+			/* Wait */
+		}
 	}
 
 	if (quicc_direction_includes_transmit(dir)) {
