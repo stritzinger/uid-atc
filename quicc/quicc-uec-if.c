@@ -450,6 +450,42 @@ static void uec_if_pin_config(void)
   #endif
 }
 
+static int ksz8864rmn_smi_phy_addr(int smi_addr)
+{
+  return 0x6 | ((smi_addr & 0xc0) >> 3) | ((smi_addr & 0x20) >> 5);
+}
+
+static int ksz8864rmn_smi_reg_addr(int smi_addr)
+{
+  return smi_addr & 0x1f;
+}
+
+static uint8_t ksz8864rmn_smi_read(quicc_uec_context *uec_context, int smi_addr)
+{
+  int phy_addr = ksz8864rmn_smi_phy_addr(smi_addr);
+  int reg_addr = ksz8864rmn_smi_reg_addr(smi_addr);
+
+  return (uint8_t) quicc_uec_mii_read(uec_context, phy_addr, reg_addr);
+}
+
+static void ksz8864rmn_smi_write(quicc_uec_context *uec_context, int smi_addr, uint8_t value)
+{
+  int phy_addr = ksz8864rmn_smi_phy_addr(smi_addr);
+  int reg_addr = ksz8864rmn_smi_reg_addr(smi_addr);
+
+  quicc_uec_mii_write(uec_context, phy_addr, reg_addr, value);
+}
+
+static void ksz8864rmn_enable_switch(quicc_uec_context *uec_context)
+{
+  uint8_t chip_id = ksz8864rmn_smi_read(uec_context, 0);
+  uint8_t revision_id = ksz8864rmn_smi_read(uec_context, 1);
+
+  if (chip_id == 0x95 && revision_id == 0x40) {
+    ksz8864rmn_smi_write(uec_context, 1, 0x1);
+  }
+}
+
 static bool uec_if_is_phy_addr_valid(int phy_addr)
 {
   return (phy_addr & 0x1f) == phy_addr;
@@ -464,6 +500,8 @@ static void uec_if_phy_init(uec_if_context *self)
     uint16_t bmcr = quicc_uec_mii_read(uec_context, phy_addr, MII_BMCR);
     bmcr = (uint16_t) (bmcr & ~(BMCR_PDOWN | BMCR_ISO));
     quicc_uec_mii_write(uec_context, phy_addr, MII_BMCR, bmcr);
+  } else {
+    ksz8864rmn_enable_switch(uec_context);
   }
 }
 
