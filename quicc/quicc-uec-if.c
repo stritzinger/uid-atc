@@ -450,14 +450,21 @@ static void uec_if_pin_config(void)
   #endif
 }
 
+static bool uec_if_is_phy_addr_valid(int phy_addr)
+{
+  return (phy_addr & 0x1f) == phy_addr;
+}
+
 static void uec_if_phy_init(uec_if_context *self)
 {
   quicc_uec_context *uec_context = &self->uec_context;
-  uint16_t val = quicc_uec_mii_read(uec_context, self->uec_config.phy_address, MII_BMCR);
+  int phy_addr = self->uec_config.phy_address;
 
-  val = (uint16_t) (val & ~(BMCR_PDOWN | BMCR_ISO));
-
-  quicc_uec_mii_write(uec_context, self->uec_config.phy_address, MII_BMCR, val);
+  if (uec_if_is_phy_addr_valid(phy_addr)) {
+    uint16_t bmcr = quicc_uec_mii_read(uec_context, phy_addr, MII_BMCR);
+    bmcr = (uint16_t) (bmcr & ~(BMCR_PDOWN | BMCR_ISO));
+    quicc_uec_mii_write(uec_context, phy_addr, MII_BMCR, bmcr);
+  }
 }
 
 static void uec_if_interface_init(void *arg)
@@ -501,9 +508,9 @@ static void uec_if_interface_init(void *arg)
 }
 
 static int uec_if_mdio_read(
-  int phy,
+  int phy_addr,
   void *arg,
-  unsigned phy_reg,
+  unsigned reg_addr,
   uint32_t *val
 )
 {
@@ -511,17 +518,17 @@ static int uec_if_mdio_read(
   quicc_uec_context *uec_context = &self->uec_context;
 
   /* FIXME */
-  phy = self->uec_config.phy_address;
+  phy_addr = self->uec_config.phy_address;
 
-  *val = quicc_uec_mii_read(uec_context, phy, (int) phy_reg);
+  *val = quicc_uec_mii_read(uec_context, phy_addr, (int) reg_addr);
 
   return 0;
 }
 
 static int uec_if_mdio_write(
-  int phy,
+  int phy_addr,
   void *arg,
-  unsigned phy_reg,
+  unsigned reg_addr,
   uint32_t data
 )
 {
@@ -529,9 +536,9 @@ static int uec_if_mdio_write(
   quicc_uec_context *uec_context = &self->uec_context;
 
   /* FIXME */
-  phy = self->uec_config.phy_address;
+  phy_addr = self->uec_config.phy_address;
 
-  quicc_uec_mii_write(uec_context, phy, (int) phy_reg, (uint16_t) data);
+  quicc_uec_mii_write(uec_context, phy_addr, (int) reg_addr, (uint16_t) data);
 
   return 0;
 }
@@ -547,14 +554,16 @@ static bool uec_if_media_status(uec_if_context *self, int *media)
 
 static void uec_if_interface_stats(uec_if_context *self)
 {
-  int media = 0;
-  bool media_ok = uec_if_media_status(self, &media);
+  if (uec_if_is_phy_addr_valid(self->uec_config.phy_address)) {
+    int media = 0;
+    bool media_ok = uec_if_media_status(self, &media);
 
-  if (media_ok) {
-    rtems_ifmedia2str(media, NULL, 0);
-    printf("\n");
-  } else {
-    printf("PHY communication error\n");
+    if (media_ok) {
+      rtems_ifmedia2str(media, NULL, 0);
+      printf("\n");
+    } else {
+      printf("PHY communication error\n");
+    }
   }
 
   printf(
@@ -752,34 +761,37 @@ static void uec_if_interface_watchdog(struct ifnet *ifp)
 {
   uec_if_context *self = ifp->if_softc;
   const quicc_uec_context *uec_context = &self->uec_context;
-  int phy = self->uec_config.phy_address;
-  uint16_t anlpar = quicc_uec_mii_read(uec_context, phy, MII_ANLPAR);
+  int phy_addr = self->uec_config.phy_address;
 
-  if (self->anlpar != anlpar) {
-    quicc_direction dir = QUICC_DIR_RX_AND_TX;
-    quicc_uec_interface_type type = self->uec_config.interface_type;
-    quicc_uec_speed speed = QUICC_UEC_SPEED_10;
-    bool full_duplex = false;
+  if (uec_if_is_phy_addr_valid(phy_addr)) {
+    uint16_t anlpar = quicc_uec_mii_read(uec_context, phy_addr, MII_ANLPAR);
 
-    self->anlpar = anlpar;
+    if (self->anlpar != anlpar) {
+      quicc_direction dir = QUICC_DIR_RX_AND_TX;
+      quicc_uec_interface_type type = self->uec_config.interface_type;
+      quicc_uec_speed speed = QUICC_UEC_SPEED_10;
+      bool full_duplex = false;
 
-    if ((anlpar & ANLPAR_TX_FD) != 0) {
-      full_duplex = true;
-      speed = QUICC_UEC_SPEED_100;
-    } else if ((anlpar & ANLPAR_T4) != 0) {
-      speed = QUICC_UEC_SPEED_100;
-    } else if ((anlpar & ANLPAR_TX) != 0) {
-      speed = QUICC_UEC_SPEED_100;
-    } else if ((anlpar & ANLPAR_10_FD) != 0) {
-      full_duplex = true;
+      self->anlpar = anlpar;
+
+      if ((anlpar & ANLPAR_TX_FD) != 0) {
+        full_duplex = true;
+        speed = QUICC_UEC_SPEED_100;
+      } else if ((anlpar & ANLPAR_T4) != 0) {
+        speed = QUICC_UEC_SPEED_100;
+      } else if ((anlpar & ANLPAR_TX) != 0) {
+        speed = QUICC_UEC_SPEED_100;
+      } else if ((anlpar & ANLPAR_10_FD) != 0) {
+        full_duplex = true;
+      }
+
+      quicc_uec_config_mode_enter(uec_context, dir);
+      quicc_uec_set_interface_mode(uec_context, type, speed, full_duplex);
+      quicc_uec_config_mode_leave(uec_context, dir);
     }
 
-    quicc_uec_config_mode_enter(uec_context, dir);
-    quicc_uec_set_interface_mode(uec_context, type, speed, full_duplex);
-    quicc_uec_config_mode_leave(uec_context, dir);
+    ifp->if_timer = UEC_IF_WATCHDOG_TIMEOUT;
   }
-
-  ifp->if_timer = UEC_IF_WATCHDOG_TIMEOUT;
 }
 
 static uec_if_context uec_if_context_instance;
@@ -823,11 +835,7 @@ static void uec_if_attach(struct rtems_bsdnet_ifconfig *config)
   self->uec_config.max_rx_buf_len = MCLBYTES;
   self->uec_config.bd_arg = self;
   self->uec_config.fill_rx_bd = uec_if_bd_rx_fill;
-#if defined(MPC83XX_BOARD_MPC8309SOM)
-  self->uec_config.phy_address = 0x11;
-#elif defined(MPC83XX_BOARD_BR_UID)
-  self->uec_config.phy_address = 0x1;
-#endif
+  self->uec_config.phy_address = MPC83XX_NETWORK_INTERFACE_0_PHY_ADDR;
 
   /* Copy MAC address */
   memcpy(self->arpcom.ac_enaddr, config->hardware_address, ETHER_ADDR_LEN);
