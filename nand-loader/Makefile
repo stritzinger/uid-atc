@@ -4,6 +4,7 @@ include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 
 APP = $(BUILDDIR)/app
 APP_PIECES = stage-1-init
+APP_PIECES += ini/ini
 APP_OBJS = $(APP_PIECES:%=$(BUILDDIR)/%.o)
 APP_DEPS = $(APP_PIECES:%=$(BUILDDIR)/%.d)
 
@@ -15,6 +16,7 @@ BOOTSTRAP_DEPS = $(BOOTSTRAP_PIECES:%=$(BUILDDIR)/%.d)
 STAGE_1 = $(BUILDDIR)/stage-1
 STAGE_1_PIECES = stage-1-start
 STAGE_1_PIECES += stage-1-init
+STAGE_1_PIECES += ini/ini
 STAGE_1_OBJS = $(STAGE_1_PIECES:%=$(BUILDDIR)/%.o)
 STAGE_1_DEPS = $(STAGE_1_PIECES:%=$(BUILDDIR)/%.d)
 
@@ -27,6 +29,7 @@ all: $(BUILDDIR) $(BOOTSTRAP).bin $(STAGE_1).bin $(STAGE_1_LOADER).exe $(APP).ex
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
+	mkdir $(BUILDDIR)/ini
 
 $(APP).exe: $(APP_OBJS)
 	$(CCLINK) $^ -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -o $@
