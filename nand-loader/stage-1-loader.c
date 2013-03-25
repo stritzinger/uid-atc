@@ -372,6 +372,9 @@ static void Init(rtems_task_argument arg)
 	//verify_stage_1_4k(&fs_part);
 	store_stage_1(&stage_1_part);
 
+	status = bed_erase_all(&fs_part, BED_ERASE_MARK_BAD_ON_ERROR);
+	assert(status == BED_SUCCESS);
+
 	exit(0);
 }
 
