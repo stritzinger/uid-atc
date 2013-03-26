@@ -1,5 +1,46 @@
-NAND Boot Loader
-================
+BR UID
+======
+
+== Git Repositories
+
+-------------------------------------------------------
+git clone zbfxigop@www.rtems.eu:rtems.git git-rtems
+git clone zbfxigop@www.rtems.eu:yaffs2.git git-yaffs2
+git clone zbfxigop@www.rtems.eu:bed.git git-bed
+git clone zbfxigop@www.rtems.eu:rtems-apps.git git-apps
+-------------------------------------------------------
+
+== RTEMS Installation
+
+---------------------------------------------------------
+cd ${ROOT}/git-rtems
+git pull
+./bootstrap
+rm -rf ${ROOT}/b-rtems
+cd ${ROOT}/b-rtems
+${ROOT}/git-rtems/configure \
+	--target=powerpc-rtems4.11 \
+	--prefix=/opt/rtems-4.11 \
+	--enable-rtemsbsp=br_uid \
+	--enable-posix \
+	--enable-maintainer-mode
+make
+make install
+---------------------------------------------------------
+
+== Library Installation
+
+---------------------------------------------------------
+cd ${ROOT}/git-yaffs2
+git pull
+make clean install
+cd ${ROOT}/git-bed
+git pull
+make clean install
+cd ${ROOT}/git-apps/quicc
+git pull
+make clean install
+---------------------------------------------------------
 
 == Flash Partitions
 
@@ -12,7 +53,7 @@ NAND Boot Loader
 |        1984 |          32 |   4MiB | Reserved
 |======================================================================================
 
-== Stage-1
+== Stage-1 (NAND Boot Loader)
 
 The stage-1 boot loader is started by the MPC8309 boot sequencer provided a
 valid RCW is stored in the first 4KiB of a NAND flash block.  The initial start

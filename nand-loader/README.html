@@ -4,7 +4,7 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 <meta name="generator" content="AsciiDoc 8.4.5" />
-<title>NAND Boot Loader</title>
+<title>BR UID</title>
 <style type="text/css">
 /* Debug borders */
 p, li, dt, dd, div, pre, h1, h2, h3, h4, h5, h6 {
@@ -384,7 +384,51 @@ div#toc a:visited { color: blue; }
 </head>
 <body>
 <div id="header">
-<h1>NAND Boot Loader</h1>
+<h1>BR UID</h1>
+</div>
+<h2 id="_git_repositories">Git Repositories</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>git clone zbfxigop@www.rtems.eu:rtems.git git-rtems
+git clone zbfxigop@www.rtems.eu:yaffs2.git git-yaffs2
+git clone zbfxigop@www.rtems.eu:bed.git git-bed
+git clone zbfxigop@www.rtems.eu:rtems-apps.git git-apps</tt></pre>
+</div></div>
+</div>
+<h2 id="_rtems_installation">RTEMS Installation</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>cd ${ROOT}/git-rtems
+git pull
+./bootstrap
+rm -rf ${ROOT}/b-rtems
+cd ${ROOT}/b-rtems
+${ROOT}/git-rtems/configure \
+        --target=powerpc-rtems4.11 \
+        --prefix=/opt/rtems-4.11 \
+        --enable-rtemsbsp=br_uid \
+        --enable-posix \
+        --enable-maintainer-mode
+make
+make install</tt></pre>
+</div></div>
+</div>
+<h2 id="_library_installation">Library Installation</h2>
+<div class="sectionbody">
+<div class="listingblock">
+<div class="content">
+<pre><tt>cd ${ROOT}/git-yaffs2
+git pull
+make clean install
+cd ${ROOT}/git-bed
+git pull
+make clean install
+cd ${ROOT}/git-apps/quicc
+git pull
+make clean install</tt></pre>
+</div></div>
 </div>
 <h2 id="_flash_partitions">Flash Partitions</h2>
 <div class="sectionbody">
@@ -429,7 +473,7 @@ cellspacing="0" cellpadding="4">
 </table>
 </div>
 </div>
-<h2 id="_stage_1">Stage-1</h2>
+<h2 id="_stage_1_nand_boot_loader">Stage-1 (NAND Boot Loader)</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>The stage-1 boot loader is started by the MPC8309 boot sequencer provided a
 valid RCW is stored in the first 4KiB of a NAND flash block.  The initial start
@@ -466,7 +510,7 @@ has priority.</p></div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2013-03-21 14:11:03 CEST
+Last updated 2013-03-26 11:11:55 CEST
 </div>
 </div>
 </body>
