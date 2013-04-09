@@ -37,8 +37,11 @@ make clean install
 cd ${ROOT}/git-bed
 git pull
 make clean install
-cd ${ROOT}/git-apps/quicc
+cd ${ROOT}/git-apps
 git pull
+cd ${ROOT}/git-apps/quicc
+make clean install
+cd ${ROOT}/git-apps/libdemo
 make clean install
 ---------------------------------------------------------
 
