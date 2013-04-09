@@ -54,7 +54,7 @@ $(IMAGE): $(BUILDDIR)/app.img
 	test -d $(dir $(IMAGE)) && cp $^ $@ || true
 
 quicc-regs.h: quicc-regs.txt convert.py
-	./convert.py < $^ > $@
+	python convert.py < $^ > $@
 
 install:  all
 	mkdir -p $(PROJECT_INCLUDE)/quicc
