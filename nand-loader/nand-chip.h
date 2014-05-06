@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 embedded brains GmbH.  All rights reserved.
+ * Copyright (c) 2013-2014 embedded brains GmbH.  All rights reserved.
  *
  *  embedded brains GmbH
  *  Obere Lagerstr. 30
@@ -114,6 +114,29 @@ extern "C" {
  * tWRT = 221ns
  */
 #define MT29F2G08ABAEA_LCLK_72_5_MHZ_OR \
+	(ELBC_OR_FCM_SCY(0) \
+		| ELBC_OR_TRLX \
+		| ELBC_OR_EHTR \
+		| ELBC_OR_FCM_RST)
+
+/*
+ * SPANSION S34ML02G1 3.3V timing for tLCLK = 13.8ns
+ *
+ * tCSCT = ?ns
+ * tEHTR = ?ns
+ * tCST = ?ns
+ * tCHT = ?ns
+ * tWS = ?ns (write)
+ * tWP = ?ns
+ * tWC = ?ns
+ * tADL = ?ns
+ * tRP = ?ns
+ * tRHT = ?ns
+ * tWS = ?ns (read)
+ * tRC = ?ns
+ * tWRT = ?ns
+ */
+#define S34ML02G1_LCLK_72_5_MHZ_OR \
 	(ELBC_OR_FCM_SCY(0) \
 		| ELBC_OR_TRLX \
 		| ELBC_OR_EHTR \
