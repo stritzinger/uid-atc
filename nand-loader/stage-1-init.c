@@ -74,9 +74,9 @@ static const bed_elbc_config elbc_config = {
 	.select_chip = bed_default_select_chip
 };
 
-static const char nfs[] = "/nfs";
+static const char nfs_dir[] = "/nfs";
 
-static const char ffs[] = "/ffs";
+static const char ffs_dir[] = "/ffs";
 
 static const char ini_file[] = "/ffs/br_uid.ini";
 
@@ -297,7 +297,7 @@ static void test_yaffs_task(rtems_task_argument arg)
 	test_file_system_with_handler(
 		0,
 		RTEMS_FILESYSTEM_TYPE_YAFFS,
-		&ffs[0],
+		&ffs_dir[0],
 		&test_yaffs_handler,
 		NULL
 	);
@@ -510,10 +510,10 @@ static void init_flash_file_system(void)
 	int rv = rtems_filesystem_register(RTEMS_FILESYSTEM_TYPE_YAFFS, test_yaffs_mount);
 	assert(rv == 0);
 
-	printf("boot: mount flash file system to \"%s\"... ", &ffs[0]);
+	printf("boot: mount flash file system to \"%s\"... ", &ffs_dir[0]);
 	rv = mount_and_make_target_path(
 		NULL,
-		&ffs[0],
+		&ffs_dir[0],
 		RTEMS_FILESYSTEM_TYPE_YAFFS,
 		RTEMS_FILESYSTEM_READ_WRITE,
 		NULL
@@ -587,7 +587,7 @@ static void Init(rtems_task_argument arg)
 
 		const char *server = &nfs_server_path[0];
 		if (strlen(server) > 0) {
-			load_via_nfs(server, &nfs[0], &nfs_image_path[0]);
+			load_via_nfs(server, &nfs_dir[0], &nfs_image_path[0]);
 		}
 	}
 
