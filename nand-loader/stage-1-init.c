@@ -359,6 +359,22 @@ static rtems_shell_cmd_t format_yaffs_command = {
 	NULL
 };
 
+static int bad_blocks(int argc, char **argv)
+{
+	bed_print_bad_blocks(&elbc_context.part, (bed_printer) fprintf, stdout);
+
+	return 0;
+}
+
+static rtems_shell_cmd_t bad_blocks_command = {
+	"bad_blocks",
+	"bad_blocks",
+	"app",
+	bad_blocks,
+	NULL,
+	NULL
+};
+
 static void print_message(int fd, int seconds_remaining, void *arg)
 {
 	printf("boot: press key to enter service mode\n");
@@ -477,6 +493,7 @@ static void start_shell(void)
 	rtems_shell_add_cmd_struct(&exception_command);
 	rtems_shell_add_cmd_struct(&test_yaffs_command);
 	rtems_shell_add_cmd_struct(&format_yaffs_command);
+	rtems_shell_add_cmd_struct(&bad_blocks_command);
 
 	rtems_status_code sc = rtems_shell_init(
 		"SHLL",
