@@ -196,9 +196,6 @@ BSP_START_TEXT_SECTION static void elbc_fcm_read_page(
 
 BSP_START_TEXT_SECTION void __wrap_boot_card(const char *cmdline)
 {
-	bed_status status = BED_SUCCESS;
-	bed_elbc_context elbc_context;
-	bed_partition *part = &elbc_context.part;
 	volatile bed_elbc *elbc = ELBC;
 	uint32_t fmr;
 	uint32_t *load = (uint32_t *) bsp_section_text_begin;
