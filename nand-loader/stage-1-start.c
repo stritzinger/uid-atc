@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 embedded brains GmbH.  All rights reserved.
+ * Copyright (c) 2013-2014 embedded brains GmbH.  All rights reserved.
  *
  *  embedded brains GmbH
  *  Obere Lagerstr. 30
@@ -110,19 +110,29 @@ BSP_START_TEXT_SECTION void nand_loader_reset(void)
 
 BSP_START_TEXT_SECTION static void enable_micron_ecc(volatile bed_elbc *elbc, uint32_t fmr)
 {
+#ifdef USE_MICRON_WITH_INTERNAL_ECC
 	bed_elbc_enable_micron_ecc(elbc, BANK, fmr, (uint8_t *) BASE_ADDRESS, true);
 	if (!bed_elbc_is_micron_ecc_enabled(elbc, BANK, fmr, (uint8_t *) BASE_ADDRESS)) {
 		nand_loader_reset();
 	}
+#else
+	(void) elbc;
+	(void) fmr;
+#endif
 }
 
 BSP_START_TEXT_SECTION static void check_micron_ecc_status(volatile bed_elbc *elbc, uint32_t fmr)
 {
+#ifdef USE_MICRON_WITH_INTERNAL_ECC
 	if ((bed_elbc_read_status(elbc, BANK, fmr, (uint8_t *) BASE_ADDRESS) & BED_NAND_STATUS_FAIL) != 0) {
 		nand_loader_reset();
 	}
 
 	bed_elbc_read_mode(elbc, BANK, fmr);
+#else
+	(void) elbc;
+	(void) fmr;
+#endif
 }
 
 BSP_START_TEXT_SECTION static uint32_t elbc_fcm_init(volatile bed_elbc *elbc)

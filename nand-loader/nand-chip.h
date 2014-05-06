@@ -142,6 +142,8 @@ extern "C" {
 		| ELBC_OR_EHTR \
 		| ELBC_OR_FCM_RST)
 
+#undef USE_MICRON_WITH_INTERNAL_ECC
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

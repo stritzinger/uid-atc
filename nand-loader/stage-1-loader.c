@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 embedded brains GmbH.  All rights reserved.
+ * Copyright (c) 2013-2014 embedded brains GmbH.  All rights reserved.
  *
  *  embedded brains GmbH
  *  Obere Lagerstr. 30
@@ -146,6 +146,7 @@ static void write_page(
 
 static bool check_read_status(bed_status status, bool expect_micron_ecc_ok)
 {
+#ifdef USE_MICRON_WITH_INTERNAL_ECC
 	uint32_t expected_status = expect_micron_ecc_ok ? 0 : BED_NAND_STATUS_FAIL;
 	bool ok = status == BED_SUCCESS
 		&& (bed_elbc_read_status(elbc, bank, fmr, base_address) & BED_NAND_STATUS_FAIL) == expected_status;
@@ -153,6 +154,12 @@ static bool check_read_status(bed_status status, bool expect_micron_ecc_ok)
 	bed_elbc_read_mode(elbc, bank, fmr);
 
 	return ok;
+#else
+	(void) status;
+	(void) expect_micron_ecc_ok;
+
+	return true;
+#endif
 }
 
 static bool read_page(
@@ -183,14 +190,18 @@ static bool read_page(
 
 static void enable_micron_ecc(void)
 {
+#ifdef USE_MICRON_WITH_INTERNAL_ECC
 	bed_elbc_enable_micron_ecc(elbc, bank, fmr, base_address, true);
 	assert(bed_elbc_is_micron_ecc_enabled(elbc, bank, fmr, base_address));
+#endif
 }
 
 static void disable_micron_ecc(void)
 {
+#ifdef USE_MICRON_WITH_INTERNAL_ECC
 	bed_elbc_enable_micron_ecc(elbc, bank, fmr, base_address, false);
 	assert(!bed_elbc_is_micron_ecc_enabled(elbc, bank, fmr, base_address));
+#endif
 }
 
 static void reset_nand_chip(void)
@@ -327,7 +338,11 @@ static void store_stage_1(const bed_partition *part)
 		page_1 = get_empty_page(part, page_1);
 		assert(page_1 != 0);
 
+#ifdef USE_MICRON_WITH_INTERNAL_ECC
 		write_page(part, page_1, &data_buf[0], &oob_buf[0]);
+#else
+		write_page_auto_oob(part, page_1, &data_buf[0]);
+#endif
 
 		bed_oob_request oob_request = {
 			.mode = BED_OOB_MODE_RAW,
@@ -360,7 +375,11 @@ static void Init(rtems_task_argument arg)
 		MT29F2G08ABAEA_LCLK_72_5_MHZ_OR
 	);
 
+#ifdef USE_MICRON_WITH_INTERNAL_ECC
 	bed_elbc_init_with_no_chip_detection(&elbc_context, &elbc_config, BLOCK_COUNT, BLOCK_SIZE, PAGE_SIZE);
+#else
+	bed_elbc_init(&elbc_context, &elbc_config);
+#endif
 
 	status = bed_partition_create(&stage_1_part, part, STAGE_1_BLOCK_BEGIN * BLOCK_SIZE, STAGE_1_BLOCK_COUNT * BLOCK_SIZE);
 	assert(status == BED_SUCCESS);
