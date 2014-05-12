@@ -5,6 +5,7 @@ include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 LIB = $(BUILDDIR)/libuid.a
 LIB_PIECES =
 LIB_PIECES += uid-init-flash
+LIB_PIECES += uid-init-network
 LIB_OBJS = $(LIB_PIECES:%=$(BUILDDIR)/%.o)
 LIB_DEPS = $(LIB_PIECES:%=$(BUILDDIR)/%.d)
 
