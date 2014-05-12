@@ -550,7 +550,8 @@ static void Init(rtems_task_argument arg)
 	init_flash_file_system();
 	evaluate_ini_file(&ini_file[0]);
 
-	bool service_mode_requested = wait_for_user_input();
+	bool service_mode_requested = timeout_in_seconds == 0 ?
+		false : wait_for_user_input();
 	if (!service_mode_requested) {
 		const char *image = &image_path[0];
 		if (strlen(image) > 0) {
