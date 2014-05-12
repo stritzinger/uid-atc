@@ -29,8 +29,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "nand-chip.h"
-
 #include <assert.h>
 #include <string.h>
 
@@ -41,6 +39,8 @@
 #include <bsp/bootcard.h>
 #include <bsp/start.h>
 #include <bsp/linker-symbols.h>
+
+#include <uid/nand-chip.h>
 
 BSP_START_TEXT_SECTION static inline void bed_elbc_write_workaround(volatile uint8_t *last);
 

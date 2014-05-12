@@ -55,9 +55,9 @@
 
 #include <quicc/quicc.h>
 
-#include <bsp.h>
+#include <uid/uid.h>
 
-#include "nand-chip.h"
+#include <bsp.h>
 
 #define SHELL_STACK_SIZE (8 * 1024)
 
@@ -65,25 +65,11 @@
 
 static rtems_id led_timer_id;
 
-static const bed_elbc_config elbc_config = {
-	.info = &bed_nand_device_info_8_bit_3_3_V[0],
-	.elbc = ELBC,
-	.base_address = (uint8_t *) BASE_ADDRESS,
-	.bank = BANK,
-	.obtain = bed_default_obtain,
-	.release = bed_default_release,
-	.select_chip = bed_default_select_chip
-};
-
 static const char nfs_dir[] = "/nfs";
 
 static const char ffs_dir[] = "/ffs";
 
 static const char ini_file[] = "/ffs/br_uid.ini";
-
-static bed_elbc_context elbc_context;
-
-static bed_partition fs_part;
 
 static char mac_address [6] = NETWORK_MAC_ADDRESS;
 
@@ -246,19 +232,6 @@ static rtems_shell_cmd_t exception_command = {
 	NULL
 };
 
-static int test_yaffs_mount(rtems_filesystem_mount_table_entry_t *mt_entry, const void *data)
-{
-	static struct yaffs_dev flash_device;
-	static const rtems_yaffs_mount_data mount_data = {
-		.dev = &flash_device
-	};
-
-	bed_status status = bed_yaffs_initialize_device(&fs_part, &flash_device);
-	assert(status == BED_SUCCESS);
-
-	return rtems_yaffs_mount_handler(mt_entry, &mount_data);
-}
-
 static int test_yaffs_mount_handler(
 	const char *disk_path,
 	const char *mount_path,
@@ -345,8 +318,7 @@ static rtems_shell_cmd_t test_yaffs_command = {
 
 static int format_yaffs(int argc, char **argv)
 {
-	bed_status status = bed_yaffs_format(&fs_part);
-	assert(status == BED_SUCCESS);
+	uid_format_flash_file_system();
 
 	return 0;
 }
@@ -362,7 +334,7 @@ static rtems_shell_cmd_t format_yaffs_command = {
 
 static int bad_blocks(int argc, char **argv)
 {
-	bed_print_bad_blocks(&elbc_context.part, (bed_printer) fprintf, stdout);
+	uid_print_bad_blocks();
 
 	return 0;
 }
@@ -516,27 +488,9 @@ static void service_mode(void)
 
 static void init_flash_file_system(void)
 {
-	bed_status status = bed_elbc_init(&elbc_context, &elbc_config);
-	assert(status == BED_SUCCESS);
-
-	bed_partition *part = &elbc_context.part;
-	assert(OOB_SIZE == bed_oob_size(part));
-
-	status = bed_partition_create(&fs_part, part, FS_BLOCK_BEGIN * BLOCK_SIZE, FS_BLOCK_COUNT * BLOCK_SIZE);
-	assert(status == BED_SUCCESS);
-
-	int rv = rtems_filesystem_register(RTEMS_FILESYSTEM_TYPE_YAFFS, test_yaffs_mount);
-	assert(rv == 0);
-
 	printf("boot: mount flash file system to \"%s\"... ", &ffs_dir[0]);
-	rv = mount_and_make_target_path(
-		NULL,
-		&ffs_dir[0],
-		RTEMS_FILESYSTEM_TYPE_YAFFS,
-		RTEMS_FILESYSTEM_READ_WRITE,
-		NULL
-	);
-	print_status(rv == 0);
+	bool ok = uid_init_flash_file_system(&ffs_dir[0]);
+	print_status(ok);
 }
 
 static void init_led(void)

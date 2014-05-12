@@ -29,8 +29,6 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "nand-chip.h"
-
 #include <assert.h>
 #include <string.h>
 #include <stdlib.h>
@@ -41,6 +39,8 @@
 #include <libcpu/powerpc-utility.h>
 
 #include <mpc83xx/mpc83xx.h>
+
+#include <uid/nand-chip.h>
 
 #define SIZE_4K (2 * PAGE_SIZE)
 

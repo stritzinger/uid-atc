@@ -29,13 +29,13 @@ $(BUILDDIR):
 	mkdir $(BUILDDIR)
 
 $(APP).exe: $(APP_OBJS)
-	$(CCLINK) $^ -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -lini -o $@
+	$(CCLINK) $^ -luid -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -lini -o $@
 
 $(BOOTSTRAP).exe: $(BOOTSTRAP_OBJS)
 	$(CCLINK) $^ -qnolinkcmds -T linkcmds.bootstrap -o $@
 
 $(STAGE_1).exe: $(STAGE_1_OBJS)
-	$(CCLINK) $^ -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -lini -qnolinkcmds -T linkcmds.stage-1 -Wl,--wrap,boot_card -o $@
+	$(CCLINK) $^ -luid -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -lini -qnolinkcmds -T linkcmds.stage-1 -Wl,--wrap,boot_card -o $@
 
 $(STAGE_1_LOADER).exe: $(STAGE_1_LOADER_OBJS) $(BUILDDIR)/stage-1-payload.o
 	$(CCLINK) $^ -lbed -o $@
