@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013 embedded brains GmbH.  All rights reserved.
+ * Copyright (c) 2013-2014 embedded brains GmbH.  All rights reserved.
  *
  *  embedded brains GmbH
  *  Obere Lagerstr. 30
@@ -47,6 +47,8 @@
 #include <rtems/rtems_bsdnet.h>
 #include <rtems/stringto.h>
 
+#include <ini/ini.h>
+
 #include <local/demo.h>
 #include <local/test.h>
 #include <local/network-config.h>
@@ -56,7 +58,6 @@
 #include <bsp.h>
 
 #include "nand-chip.h"
-#include "ini/ini.h"
 
 #define SHELL_STACK_SIZE (8 * 1024)
 

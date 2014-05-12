@@ -4,7 +4,6 @@ include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 
 APP = $(BUILDDIR)/app
 APP_PIECES = stage-1-init
-APP_PIECES += ini/ini
 APP_OBJS = $(APP_PIECES:%=$(BUILDDIR)/%.o)
 APP_DEPS = $(APP_PIECES:%=$(BUILDDIR)/%.d)
 
@@ -16,7 +15,6 @@ BOOTSTRAP_DEPS = $(BOOTSTRAP_PIECES:%=$(BUILDDIR)/%.d)
 STAGE_1 = $(BUILDDIR)/stage-1
 STAGE_1_PIECES = stage-1-start
 STAGE_1_PIECES += stage-1-init
-STAGE_1_PIECES += ini/ini
 STAGE_1_OBJS = $(STAGE_1_PIECES:%=$(BUILDDIR)/%.o)
 STAGE_1_DEPS = $(STAGE_1_PIECES:%=$(BUILDDIR)/%.d)
 
@@ -29,16 +27,15 @@ all: $(BUILDDIR) $(BOOTSTRAP).bin $(STAGE_1).bin $(STAGE_1_LOADER).exe $(APP).ex
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
-	mkdir $(BUILDDIR)/ini
 
 $(APP).exe: $(APP_OBJS)
-	$(CCLINK) $^ -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -o $@
+	$(CCLINK) $^ -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -lini -o $@
 
 $(BOOTSTRAP).exe: $(BOOTSTRAP_OBJS)
 	$(CCLINK) $^ -qnolinkcmds -T linkcmds.bootstrap -o $@
 
 $(STAGE_1).exe: $(STAGE_1_OBJS)
-	$(CCLINK) $^ -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -qnolinkcmds -T linkcmds.stage-1 -Wl,--wrap,boot_card -o $@
+	$(CCLINK) $^ -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -lini -qnolinkcmds -T linkcmds.stage-1 -Wl,--wrap,boot_card -o $@
 
 $(STAGE_1_LOADER).exe: $(STAGE_1_LOADER_OBJS) $(BUILDDIR)/stage-1-payload.o
 	$(CCLINK) $^ -lbed -o $@
