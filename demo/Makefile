@@ -15,7 +15,7 @@ $(BUILDDIR):
 	mkdir $(BUILDDIR)
 
 $(APP): $(APP_OBJS)
-	$(CCLINK) $^ -o $@ -ldemo -lftpd -ltelnetd -lquicc -lnfs
+	$(CCLINK) $^ -o $@ -luid -lini -lbed -lyaffs2 -ldemo -lftpd -ltelnetd -lquicc -lnfs
 
 $(BUILDDIR)/app.bin: $(APP)
 	$(OBJCOPY) -O binary $^ $@
