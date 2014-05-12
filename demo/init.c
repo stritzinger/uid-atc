@@ -43,7 +43,7 @@ static void Init(rtems_task_argument arg)
 
   demo_initialize_ftpfs(true, 10);
 
-  demo_start_telnetd(70, 32 * 1024);
+  demo_initialize_telnetd(70, 32 * 1024);
 
   demo_initialize_ftpd(70);
 
@@ -59,6 +59,8 @@ static void Init(rtems_task_argument arg)
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_STUB_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_ZERO_DRIVER
+
+#define CONFIGURE_MAXIMUM_DRIVERS 32
 
 #define CONFIGURE_USE_IMFS_AS_BASE_FILESYSTEM
 
