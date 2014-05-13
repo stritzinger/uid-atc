@@ -56,7 +56,7 @@ $(IMAGE): $(BUILDDIR)/app.img
 quicc-regs.h: quicc-regs.txt convert.py
 	python convert.py < $< > $@
 
-install:  all
+install:  $(LIB).a
 	mkdir -p $(PROJECT_INCLUDE)/quicc
 	install -m 644 $(LIB).a $(PROJECT_LIB)
 	install -m 644 *.h $(PROJECT_INCLUDE)/quicc
