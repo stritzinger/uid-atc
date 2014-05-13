@@ -447,6 +447,9 @@ static void uec_if_pin_config(void)
 
     /* Set FEC1 pin function for FEC1 block */
     syscon->sicrl = BSP_BFLD32SET(syscon->sicrl, 0x0, 28, 29);
+
+    /* Set USB pin function for USB_D block */
+    syscon->sicrh = BSP_BFLD32SET(syscon->sicrh, 0x0, 12, 13);
   #endif
 }
 
