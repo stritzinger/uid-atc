@@ -1,0 +1,14 @@
+{0}
+	trf7970a_regs{}
+		irq_status(1){c}
+			0 noresp
+			1 col
+			2 err3
+			3 err2
+			4 err1
+			5 fifo
+			6 srx
+			7 tx
+		fifo_status(1){1c}
+			0 6 bytes
+			7 overflow

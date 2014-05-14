@@ -1,0 +1,9 @@
+Changelog:
+V 04:
+
+V 0.3:
+- LED gos on while a tag is beein detected by command TRF_tag_detect
+- Detection done by command TRF_tag_detect sped up
+- Controls the multiplexer to select the SPI interface
+- Support for multiio TRF communication via addressed SPI implemented but not activated
+- Support for multiio digital aoutputs implemented but not activated + commands missing
