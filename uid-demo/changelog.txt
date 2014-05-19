@@ -1,5 +1,7 @@
 Changelog:
-V 04:
+V 0.4:
+- Use addressable spi driver
+- Add TRF_spi_raw command
 
 V 0.3:
 - LED gos on while a tag is beein detected by command TRF_tag_detect

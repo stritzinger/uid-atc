@@ -35,11 +35,12 @@ typedef enum {
 } trf_7970A_cmd_raw_mode;
 
 static int trf7970A_cmd_raw_hdlr(
-  int                          argc,
-  char                       **argv,
-  const trf_7970A_cmd_raw_mode mode,
-  uint8_t                     *read_buf,
-  const size_t                 read_buf_size
+  int                           argc,
+  char                        **argv,
+  const trf_7970A_cmd_raw_mode  mode,
+  bool                          use_trf_address,
+  uint8_t                      *read_buf,
+  const size_t                  read_buf_size
 )
 {
   int                       eno             = 0;
@@ -49,6 +50,7 @@ static int trf7970A_cmd_raw_hdlr(
   uint8_t                   write_buf[MULTIIO_WRITE_BUF_SIZE];
   uint8_t                  *buf_read;
   size_t                    bytes_written;
+  multiio_addr              address         = MULTIIO_ADDR_RFID_READER;
   multiio_exchange_data     exchange_data;
   multiio_reply             reply_data      = MULTIIO_REPLY_INITIALIZER(
     &read_buf[0],
@@ -71,6 +73,17 @@ static int trf7970A_cmd_raw_hdlr(
   }
 
   if( eno == 0 ) {
+    /* Get the address from argv if necessary */
+    if( ! use_trf_address ) {
+      if( 1 == sscanf( argv[index_arg], "%2"SCNx8, &(address) ) ) {
+        ++index_arg;
+      } else {
+        if( mode == TRF_7979A_CMD_RAW_MODE_VERBOSE ) {
+          printf( "Failure: Invalid argument: %s\n", argv[index_arg] );
+        }
+        eno = EINVAL;
+      }
+    }
     /* Get the SPI characters from argv */
     while( index_arg < argc && eno == 0 ) {
       if( 1 == sscanf( argv[index_arg], "%2"SCNx8, &(write_buf[index_buf]) ) ) {
@@ -89,7 +102,7 @@ static int trf7970A_cmd_raw_hdlr(
   if( bytes_written <= MULTIIO_WRITE_BUF_SIZE ) {
     if( bytes_written <= read_buf_size ) {
       /* Write to the interface */
-      exchange_data.address        = MULTIIO_ADDR_RFID_READER;
+      exchange_data.address        = address;
       exchange_data.write_buf      = &write_buf[0];
       exchange_data.read_buf       = &read_buf[0];
       exchange_data.num_chars      = bytes_written;
@@ -127,8 +140,7 @@ static int trf7970A_cmd_raw_hdlr(
   return eno;
 }
 
-
-static int trf7970A_cmd_raw_func( int argc, char **argv )
+static int trf7970A_cmd_raw_and_spiraw_func( int argc, char **argv, bool use_trf_address )
 {
   int     eno;
   uint8_t read_buf[MULTIIO_READ_BUF_SIZE];
@@ -139,6 +151,7 @@ static int trf7970A_cmd_raw_func( int argc, char **argv )
     argc,
     argv,
     TRF_7979A_CMD_RAW_MODE_VERBOSE,
+    use_trf_address,
     &read_buf[0],
     MULTIIO_READ_BUF_SIZE
  );
@@ -151,6 +164,29 @@ static int trf7970A_cmd_raw_func( int argc, char **argv )
     printf( "\n" );
   }
   return eno;
+}
+
+static int trf7970A_cmd_spi_raw_func( int argc, char **argv )
+{
+  return trf7970A_cmd_raw_and_spiraw_func( argc, argv, false );
+}
+
+rtems_shell_cmd_t trf7970A_cmd_spi_raw = {
+  "TRF_spi_raw",
+  "TRF_spi_raw <address param1 [param2 [param3 [...]]]>\n"
+  "Forwards parameters to the SPI using given multiio address.\n"
+  "Arguments are hexadecimal bytes with leading zeros and without\n"
+  "leading 0x or trailing h\n"
+  "Returns bytes returned by the SPI in the same format.\n",
+  "TRF",
+  trf7970A_cmd_spi_raw_func,
+  NULL,
+  NULL
+};
+
+static int trf7970A_cmd_raw_func( int argc, char **argv )
+{
+  return trf7970A_cmd_raw_and_spiraw_func( argc, argv, true );
 }
 
 rtems_shell_cmd_t trf7970A_cmd_raw = {
@@ -195,7 +231,7 @@ int trf7979A_cmd_raw_string( const char* cmd_string, uint8_t *read_buf, const si
       }
 
       /* Execute the handling for raw commands silently */
-      eno = trf7970A_cmd_raw_hdlr( index, cmd, TRF_7979A_CMD_RAW_MODE_SILENT, read_buf, read_buf_size );
+      eno = trf7970A_cmd_raw_hdlr( index, cmd, TRF_7979A_CMD_RAW_MODE_SILENT, true, read_buf, read_buf_size );
       if( index > 0 ) {
         /* Print the executed commands and their results */
         printf( "> %s\n", &cmd_string[cmd[1] - cmd[0]] );

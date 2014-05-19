@@ -39,6 +39,7 @@ int trf7970A_init(
 );
 
 extern rtems_shell_cmd_t trf7970A_cmd_raw;
+extern rtems_shell_cmd_t trf7970A_cmd_spi_raw;
 extern rtems_shell_cmd_t trf7970A_cmd_init;
 extern rtems_shell_cmd_t trf7970A_cmd_modulation_13;
 extern rtems_shell_cmd_t trf7970A_cmd_modulation_30;

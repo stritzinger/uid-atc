@@ -33,6 +33,10 @@ APP_PIECES =                    \
 APP_OBJS = $(APP_PIECES:%=$(BUILDDIR)/%.o)
 APP_DEPS = $(APP_PIECES:%=$(BUILDDIR)/%.d)
 
+CFLAGS += $(DEPFLAGS) $(GCCFLAGS) -Wno-unused -O0
+
+CXXFLAGS += $(CFLAGS)
+
 all: $(BUILDDIR) $(APP).exe
 
 $(BUILDDIR):

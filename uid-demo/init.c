@@ -23,6 +23,7 @@
 #include <bsp.h>
 #include "led.h"
 #include "spi.h"
+#include "spi_addressable.h"
 #include "trf7970A.h"
 #include "chip_select.h"
 #include "multiplexer.h"
@@ -58,7 +59,7 @@ static void Init(rtems_task_argument arg)
   rtems_shell_cmd_t *cmd;
   rtems_device_major_number id_major_led = 0;
 
-  printf( "\nuid-demo Version 0.3\n" );
+  printf( "\nuid-demo Version 0.4\n" );
 
   sc = bsp_register_i2c();
   assert( sc == RTEMS_SUCCESSFUL );
@@ -79,7 +80,7 @@ static void Init(rtems_task_argument arg)
 
   if( eno == 0 ) {
     eno = trf7970A_init(
-      &spi_bus_driver,
+      &spi_addressable_bus_driver,
       RTEMS_EVENT_0,
       RTEMS_EVENT_1
     );
@@ -97,6 +98,13 @@ static void Init(rtems_task_argument arg)
     cmd = rtems_shell_add_cmd_struct(&trf7970A_cmd_raw);
     assert( cmd == &trf7970A_cmd_raw );
     if( cmd != &trf7970A_cmd_raw ) {
+      eno = EFAULT;
+    }
+  }
+  if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&trf7970A_cmd_spi_raw);
+    assert( cmd == &trf7970A_cmd_spi_raw );
+    if( cmd != &trf7970A_cmd_spi_raw ) {
       eno = EFAULT;
     }
   }

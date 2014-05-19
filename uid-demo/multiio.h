@@ -36,15 +36,14 @@ extern "C" {
 #define MULTIIO_READ_BUF_SIZE  32
 #define MULTIIO_WRITE_BUF_SIZE 32
 
-typedef enum {
-  MULTIIO_ADDR_RFID_READER,  /* the trf7990A RFID reader */
-  MULTIIO_ADDR_DIG_OP,       /* the nvc7608 digital output control */
-  MULTIIO_ADDR_DIG_IP,       /* the input control of the CPLD */
-  MULTIIO_ADDR_IRQ_CTRL,     /* the interrupt control of the CPLD */
+#define MULTIIO_ADDR_DIG_IP 0x01       /* the input control of the CPLD */
+#define MULTIIO_ADDR_IRQ_CTRL 0x03     /* the interrupt control of the CPLD */
+#define MULTIIO_ADDR_RFID_READER 0x04  /* the trf7990A RFID reader */
+#define MULTIIO_ADDR_DIG_OP 0x05       /* the nvc7608 digital output control */
 
-  MULTIIO_ADDR_COUNT         /* Numuber of addressable SPI devices
-                                on the multiio board */
-} multiio_addr;
+#define MULTIIO_ADDR_COUNT 4        /* Numuber of addressable SPI devices
+                                       on the multiio board */
+typedef uint8_t multiio_addr;
 
 typedef void (*multiio_irq_handler)(void *arg);
 typedef int (*multiio_on_reply_ready_handler)(void* arg);
