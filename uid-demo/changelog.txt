@@ -1,7 +1,13 @@
 Changelog:
+V 0.5:
+- Remove dummy write from SPI addressable
+- Introduce MultiIO driver helper (mio)
+- Rename TRF_spi_raw command to MIO_raw
+
 V 0.4:
 - Use addressable spi driver
 - Add TRF_spi_raw command
+- Add dummy write to SPI addressable
 
 V 0.3:
 - LED gos on while a tag is beein detected by command TRF_tag_detect

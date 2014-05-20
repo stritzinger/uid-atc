@@ -41,6 +41,8 @@ extern "C" {
 #define MULTIIO_ADDR_RFID_READER 0x04  /* the trf7990A RFID reader */
 #define MULTIIO_ADDR_DIG_OP 0x05       /* the nvc7608 digital output control */
 
+#define MULTIIO_ADDR_INVALID 0xFF      /* invalid address */
+
 #define MULTIIO_ADDR_COUNT 4        /* Numuber of addressable SPI devices
                                        on the multiio board */
 typedef uint8_t multiio_addr;

@@ -36,17 +36,9 @@ int spi_addressable_data_exchange(
   int                 bytes_received;
   rtems_libi2c_bus_t *bus_handle = (rtems_libi2c_bus_t*)(&spi_the_ctxt.spi_desc);
   uint8_t             read_address;
-  uint8_t             null = 0;
   
   assert( data                 != NULL );
   assert( data->on_reply_ready != NULL );
-  
-  bytes_received = mpc83xx_spi_read_write_bytes(
-    bus_handle,
-    &read_address,
-    &null,
-    1
-  );
 
   chip_select();
   bytes_received = mpc83xx_spi_read_write_bytes(

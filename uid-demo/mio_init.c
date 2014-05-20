@@ -3,7 +3,7 @@
  *
  * @brief Initialization handling.
  *
- * Initialization handling for trf7970A RFID controller.
+ * Initialization handling for MultiIO command driver.
  *
  */
 
@@ -21,19 +21,19 @@
  * http://www.rtems.org/license/LICENSE.
  */
 
-#include "trf7970A.h"
-#include "trf7970A_impl.h"
+#include "mio.h"
+#include "mio_impl.h"
 
-trf7970A_impl_context trf7970A_impl_the_context = TRF7970A_IMPL_CONTEXT_INITIALIZER();
+mio_impl_context mio_impl_the_context = MIO_IMPL_CONTEXT_INITIALIZER();
 
-static void trf7970A_init_irq_handler( void* arg )
+static void mio_init_irq_handler( void* arg )
 {
-//  trf7970A_impl_context *the_context = (trf7970A_impl_context*)arg;
+//  mio_impl_context *the_context = (mio_impl_context*)arg;
 
-  printk( "trf7970A irq\n" );
+  printk( "mio irq\n" );
 }
 
-int trf7970A_init(
+int mio_init(
   const multiio_bus_driver *bus_driver,
   const rtems_event_set     EVENT_ID_REPLY_READY,
   const rtems_event_set     EVENT_ID_DEVICE_IRQ
@@ -41,7 +41,7 @@ int trf7970A_init(
 {
   int eno;
 
-  trf7970A_impl_the_context.event_id_reply_ready = EVENT_ID_REPLY_READY;
+  mio_impl_the_context.event_id_reply_ready = EVENT_ID_REPLY_READY;
   
   eno = multiio_init(
     bus_driver
@@ -50,8 +50,8 @@ int trf7970A_init(
 /*  if( eno == 0 ) {
     (bus_driver->register_irq_handler)(
       MULTIIO_ADDR_RFID_READER,
-      trf7970A_init_irq_handler,
-      &trf7970A_impl_the_context
+      mio_init_irq_handler,
+      &mio_impl_the_context
     );
   }*/
   

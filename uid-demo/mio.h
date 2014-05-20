@@ -3,9 +3,9 @@
  *
  * @ingroup uid_demo
  *
- * @brief trf7970A RFID controller internal.
+ * @brief MultiIO command driver.
  *
- * Internal methods, types and data for the trf7970A RFID controller.
+ * Command and initialization methods for the MultiIO command driver.
  */
 
 /*
@@ -22,20 +22,26 @@
  * http://www.rtems.org/license/LICENSE.
  */
 
-#ifndef TRF7970A_IMPL_H
-#define TRF7970A_IMPL_H
+#ifndef MIO_H
+#define MIO_H
 
-#include <stdint.h>
-#include <rtems.h>
+#include <rtems/shell.h>
+#include "multiio.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */
 
-int trf7979A_cmd_raw_string( const char* cmd_string, uint8_t *read_buf, const size_t buf_size );
+int mio_init(
+  const multiio_bus_driver *bus_driver,
+  const rtems_event_set     EVENT_ID_REPLY_READY,
+  const rtems_event_set     EVENT_ID_DEVICE_IRQ
+);
+
+extern rtems_shell_cmd_t mio_cmd_raw;
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* TRF7970A_IMPL_H */
+#endif /* MIO_H */

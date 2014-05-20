@@ -13,6 +13,8 @@ APP_PIECES =                    \
   ncv7608                       \
   spi                           \
   spi_addressable               \
+  mio_init                      \
+  mio_cmd_raw                   \
   trf7970A_cmd_agc_off          \
   trf7970A_cmd_agc_on           \
   trf7970A_cmd_am               \
@@ -27,7 +29,6 @@ APP_PIECES =                    \
   trf7970A_cmd_reg_write        \
   trf7970A_cmd_tag              \
   trf7970A_cmd_tag_detect       \
-  trf7970A_init                 \
   trf7970A_irq_print_unexpected
 
 APP_OBJS = $(APP_PIECES:%=$(BUILDDIR)/%.o)
