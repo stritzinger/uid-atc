@@ -26,15 +26,19 @@
 #define NCV7608_ID_MINOR 0
 
 typedef struct {
-  uint8_t channels;
+  uint8_t driver_en;
+  uint8_t diag_en;
   rtems_event_set id_event_reply_ready;
 } ncv7608_context;
 
 #define NCV7608_CONTEXT_INITIALIZER() \
 {                                     \
   0,                                  \
+  0,                                  \
   0                                   \
 }
+
+#define BUF_SIZE 2
 
 static ncv7608_context ncv7608_the_context = NCV7608_CONTEXT_INITIALIZER();
 
@@ -69,6 +73,51 @@ rtems_device_driver ncv7608_init(
   return sc;
 }
 
+static rtems_status_code rw_from_context( uint8_t read_buf[BUF_SIZE] )
+{
+  /* write data from context and return result in read[] */
+  rtems_status_code      sc  = RTEMS_IO_ERROR;
+
+  uint8_t write_buf[]                  = { 0x00, 0x00 };
+  const multiio_bus_driver *BUS_DRIVER = multiio_get_bus_driver();
+  multiio_reply reply_data             = MULTIIO_REPLY_INITIALIZER(
+    &read_buf[0],
+    rtems_task_self(),
+    ncv7608_the_context.id_event_reply_ready,
+    MULTIIO_ADDR_DIG_OP
+  );
+  multiio_exchange_data exchange_data;
+  int eno;
+
+  write_buf[0] = ncv7680_reverse_byte( ncv7608_the_context.driver_en );
+  write_buf[1] = ncv7680_reverse_byte( ncv7608_the_context.diag_en );
+
+  exchange_data.address        = MULTIIO_ADDR_DIG_OP;
+  exchange_data.write_buf      = &write_buf[0];
+  exchange_data.read_buf       = &read_buf[0];
+  exchange_data.num_chars      = sizeof(write_buf);
+  exchange_data.arg            = &reply_data;
+  exchange_data.on_reply_ready = multiio_reply_ready;
+  eno = (BUS_DRIVER->data_exchange)( &exchange_data );
+  if( eno == 0 ) {
+    uint8_t* buf_read;
+    /* Wait for the result */
+    eno = multiio_reply_wait_for(
+      reply_data.id_event,
+      MULTIIO_ADDR_DIG_OP,
+      rtems_clock_get_ticks_per_second() / 1000,
+      &buf_read
+    );
+    if( eno == 0 ) {
+      read_buf[0] = ncv7680_reverse_byte( buf_read[0] );
+      read_buf[1] = ncv7680_reverse_byte( buf_read[1] );
+      sc = RTEMS_SUCCESSFUL;
+    }
+  }
+
+  return sc;
+}
+
 rtems_device_driver ncv7608_read(
   rtems_device_major_number id_major,
   rtems_device_minor_number id_minor,
@@ -81,12 +130,11 @@ rtems_device_driver ncv7608_read(
 
   (void)id_major;
 
-  if (rw->count == 1 && id_minor == NCV7608_ID_MINOR ) {
-    *buf = ncv7608_the_context.channels;
-    sc = RTEMS_SUCCESSFUL;
+  if (rw->count == 2 && id_minor == NCV7608_ID_MINOR ) {
+    sc = rw_from_context( buf );
   }
   
-  rw->bytes_moved = sc == RTEMS_SUCCESSFUL ? 1 : 0;
+  rw->bytes_moved = sc == RTEMS_SUCCESSFUL ? 2 : 0;
   
   return sc;
 }
@@ -104,53 +152,16 @@ rtems_device_driver ncv7608_write(
   (void)id_major;
 
   if (rw->count == 1 && id_minor == NCV7608_ID_MINOR) {
-    /* The low level SPI driver wants a word length of 8 bits and the MSB
-     * first. But the ncv7608 required 16 bit word length and the LSB
-     * first. Thus we will have to compensate for this. by writing two bytes
-     * and reversing the bit order in our data byte */
-    uint8_t write_buf[]                  = { 0x00, 0x00 };
-    uint8_t read_buf[]                   = { 0x00, 0x00 };
-    const multiio_bus_driver *BUS_DRIVER = multiio_get_bus_driver();
-    multiio_reply reply_data             = MULTIIO_REPLY_INITIALIZER(
-      &read_buf[0],
-      rtems_task_self(),
-      ncv7608_the_context.id_event_reply_ready,
-      MULTIIO_ADDR_DIG_OP
-    );
-    multiio_exchange_data exchange_data;
-    int eno;
+    uint8_t read_buf[BUF_SIZE] = { 0x00, 0x00 };
+    ncv7608_the_context.driver_en = buf[0];
 
-    write_buf[0] = ncv7680_reverse_byte( buf[0] );
-
-    exchange_data.address        = MULTIIO_ADDR_DIG_OP;
-    exchange_data.write_buf      = &write_buf[0];
-    exchange_data.read_buf       = &read_buf[0];
-    exchange_data.num_chars      = sizeof(write_buf);
-    exchange_data.arg            = &reply_data;
-    exchange_data.on_reply_ready = multiio_reply_ready;
-    eno = (BUS_DRIVER->data_exchange)( &exchange_data );
-    if( eno == 0 ) {
-      uint8_t* buf_read;
-      /* Wait for the result */
-      eno = multiio_reply_wait_for(
-        reply_data.id_event,
-        MULTIIO_ADDR_DIG_OP,
-        rtems_clock_get_ticks_per_second() / 1000,
-        &buf_read
-      );
-      if( eno == 0 ) {
-        *buf                         =  ncv7680_reverse_byte( buf_read[1] );
-        ncv7608_the_context.channels = *buf;
-        sc                           = RTEMS_SUCCESSFUL;
-      }
-    }
+    sc = rw_from_context( read_buf );
   }
   
   rw->bytes_moved = sc == RTEMS_SUCCESSFUL ? 1 : 0;
   
   return sc;
 }
-
 
 const rtems_driver_address_table ncv7608_driver_table = {
   ncv7608_init,  /* initialization_entry */

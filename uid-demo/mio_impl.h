@@ -35,14 +35,12 @@ extern "C" {
 
 
 typedef struct {
-  rtems_event_set event_id_device_irq;
   rtems_event_set event_id_reply_ready;
 } mio_impl_context;
 
 #define MIO_IMPL_CONTEXT_INITIALIZER( \
 )                                          \
 {                                          \
-  0,                                       \
   0                                        \
 }
 

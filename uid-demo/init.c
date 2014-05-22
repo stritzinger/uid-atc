@@ -25,6 +25,8 @@
 #include "spi.h"
 #include "spi_addressable.h"
 #include "trf7970A.h"
+#include "ncv7608.h"
+#include "ncv7608_cmd.h"
 #include "mio.h"
 #include "chip_select.h"
 #include "multiplexer.h"
@@ -59,8 +61,9 @@ static void Init(rtems_task_argument arg)
   int                eno;
   rtems_shell_cmd_t *cmd;
   rtems_device_major_number id_major_led = 0;
+  rtems_device_major_number id_major_ncv = 0;
 
-  printf( "\nuid-demo Version 0.5\n" );
+  printf( "\nuid-demo Version 0.6\n" );
 
   sc = bsp_register_i2c();
   assert( sc == RTEMS_SUCCESSFUL );
@@ -75,6 +78,17 @@ static void Init(rtems_task_argument arg)
     assert( sc == RTEMS_SUCCESSFUL );
     eno = rtems_status_code_to_errno( sc );
   }
+/*
+  if( eno == 0 ) {
+    sc = rtems_io_register_driver(
+      0,
+      &ncv7608_driver_table,
+      &id_major_ncv
+    );
+    assert( sc == RTEMS_SUCCESSFUL );
+    eno = rtems_status_code_to_errno( sc );
+  }
+*/
 
   multiplexer_init();
   chip_select_init();
@@ -82,6 +96,13 @@ static void Init(rtems_task_argument arg)
   if( eno == 0 ) {
     eno = mio_init(
       &spi_addressable_bus_driver,
+      RTEMS_EVENT_0
+    );
+    assert( eno == 0 );
+  }
+
+  if( eno == 0 ) {
+    eno = trf7970A_init(
       RTEMS_EVENT_0,
       RTEMS_EVENT_1
     );
@@ -92,6 +113,13 @@ static void Init(rtems_task_argument arg)
     cmd = rtems_shell_add_cmd_struct(&mio_cmd_raw);
     assert( cmd == &mio_cmd_raw );
     if( cmd != &mio_cmd_raw ) {
+      eno = EFAULT;
+    }
+  }
+  if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&mio_cmd_input);
+    assert( cmd == &mio_cmd_input );
+    if( cmd != &mio_cmd_input ) {
       eno = EFAULT;
     }
   }
@@ -201,6 +229,29 @@ static void Init(rtems_task_argument arg)
     }
   }
   if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&ncv7608_cmd_wr);
+    assert( cmd == &ncv7608_cmd_wr );
+    if( cmd != &ncv7608_cmd_wr ) {
+      eno = EFAULT;
+    }
+  }
+/*
+  if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&ncv7608_cmd_write);
+    assert( cmd == &ncv7608_cmd_write );
+    if( cmd != &ncv7608_cmd_write ) {
+      eno = EFAULT;
+    }
+  }
+  if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&ncv7608_cmd_read);
+    assert( cmd == &ncv7608_cmd_read );
+    if( cmd != &ncv7608_cmd_read ) {
+      eno = EFAULT;
+    }
+  }
+*/
+  if( eno == 0 ) {
     sc = rtems_shell_init(
       "SHLL",
       SHELL_STACK_SIZE,
@@ -215,6 +266,8 @@ static void Init(rtems_task_argument arg)
 
   exit(0);
 }
+
+#define NCV_OBJECT_COUNT_DRIVERS 1
 
 #define CONFIGURE_APPLICATION_NEEDS_CLOCK_DRIVER
 #define CONFIGURE_APPLICATION_NEEDS_CONSOLE_DRIVER
@@ -244,6 +297,7 @@ static void Init(rtems_task_argument arg)
     INIT_OBJECT_COUNT_DRIVERS_CONSOLE    \
   + INIT_OBJECT_COUNT_DRIVERS_I2C_BUS    \
   + LED_OBJECT_COUNT_DRIVERS             \
+  + NCV_OBJECT_COUNT_DRIVERS             \
 )                                        \
 
 #define CONFIGURE_MAXIMUM_POSIX_KEYS 16
@@ -262,5 +316,8 @@ static void Init(rtems_task_argument arg)
 #define CONFIGURE_SHELL_COMMAND_CPUUSE
 #define CONFIGURE_SHELL_COMMAND_PERIODUSE
 #define CONFIGURE_SHELL_COMMAND_STACKUSE
+
+#define CONFIGURE_SHELL_COMMAND_LS
+#define CONFIGURE_SHELL_COMMAND_CAT
 
 #include <rtems/shellconfig.h>

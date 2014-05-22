@@ -24,19 +24,11 @@
 #include "mio.h"
 #include "mio_impl.h"
 
-mio_impl_context mio_impl_the_context = MIO_IMPL_CONTEXT_INITIALIZER();
-
-static void mio_init_irq_handler( void* arg )
-{
-//  mio_impl_context *the_context = (mio_impl_context*)arg;
-
-  printk( "mio irq\n" );
-}
+mio_impl_context mio_impl_the_context;
 
 int mio_init(
   const multiio_bus_driver *bus_driver,
-  const rtems_event_set     EVENT_ID_REPLY_READY,
-  const rtems_event_set     EVENT_ID_DEVICE_IRQ
+  const rtems_event_set     EVENT_ID_REPLY_READY
 )
 {
   int eno;
@@ -47,13 +39,5 @@ int mio_init(
     bus_driver
   );
 
-/*  if( eno == 0 ) {
-    (bus_driver->register_irq_handler)(
-      MULTIIO_ADDR_RFID_READER,
-      mio_init_irq_handler,
-      &mio_impl_the_context
-    );
-  }*/
-  
   return eno;
 }

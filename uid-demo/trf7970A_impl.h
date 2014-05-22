@@ -32,6 +32,21 @@
 extern "C" {
 #endif /* __cplusplus */
 
+
+typedef struct {
+  rtems_event_set event_id_device_irq;
+  rtems_event_set event_id_reply_ready;
+} trf7970A_impl_context;
+
+#define TRF7970A_IMPL_CONTEXT_INITIALIZER( \
+)                                          \
+{                                          \
+  0,                                       \
+  0                                        \
+}
+
+extern trf7970A_impl_context trf7970A_impl_the_context;
+
 int trf7979A_cmd_raw_string( const char* cmd_string, uint8_t *read_buf, const size_t buf_size );
 
 #ifdef __cplusplus

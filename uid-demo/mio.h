@@ -34,11 +34,11 @@ extern "C" {
 
 int mio_init(
   const multiio_bus_driver *bus_driver,
-  const rtems_event_set     EVENT_ID_REPLY_READY,
-  const rtems_event_set     EVENT_ID_DEVICE_IRQ
+  const rtems_event_set     EVENT_ID_REPLY_READY
 );
 
 extern rtems_shell_cmd_t mio_cmd_raw;
+extern rtems_shell_cmd_t mio_cmd_input;
 
 #ifdef __cplusplus
 }

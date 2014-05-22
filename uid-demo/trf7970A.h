@@ -33,7 +33,6 @@ extern "C" {
 #endif /* __cplusplus */
 
 int trf7970A_init(
-  const multiio_bus_driver *bus_driver,
   const rtems_event_set     EVENT_ID_REPLY_READY,
   const rtems_event_set     EVENT_ID_DEVICE_IRQ
 );

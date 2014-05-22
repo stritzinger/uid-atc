@@ -1,5 +1,9 @@
 Changelog:
 V 0.5:
+- Add MIO_input
+- Add NCV_wr
+
+V 0.5:
 - Remove dummy write from SPI addressable
 - Introduce MultiIO driver helper (mio)
 - Rename TRF_spi_raw command to MIO_raw

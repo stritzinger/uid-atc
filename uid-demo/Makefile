@@ -11,10 +11,14 @@ APP_PIECES =                    \
   multiio                       \
   multiplexer                   \
   ncv7608                       \
+  ncv7608_cmd_wr                \
+  ncv7608_cmd_write             \
+  ncv7608_cmd_read              \
   spi                           \
   spi_addressable               \
   mio_init                      \
   mio_cmd_raw                   \
+  mio_cmd_input                 \
   trf7970A_cmd_agc_off          \
   trf7970A_cmd_agc_on           \
   trf7970A_cmd_am               \
@@ -29,6 +33,7 @@ APP_PIECES =                    \
   trf7970A_cmd_reg_write        \
   trf7970A_cmd_tag              \
   trf7970A_cmd_tag_detect       \
+  trf7970A_init                 \
   trf7970A_irq_print_unexpected
 
 APP_OBJS = $(APP_PIECES:%=$(BUILDDIR)/%.o)
@@ -38,7 +43,7 @@ CFLAGS += $(DEPFLAGS) $(GCCFLAGS) -Wno-unused -O0
 
 CXXFLAGS += $(CFLAGS)
 
-all: $(BUILDDIR) $(APP).exe
+all: $(BUILDDIR) $(APP).exe $(APP).bin
 
 $(BUILDDIR):
 	mkdir $(BUILDDIR)
