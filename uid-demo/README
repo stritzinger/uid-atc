@@ -1,29 +1,52 @@
-Structure:
+== Load the Application to UID
 
-                  +---------+
-USER              | User    |
-                  +---------+
-                     | |____________________
-                     |                      |
-                  +--------------+   +--------------+
-SHELL             | Commands MIO |   | Commands TRF |
-                  | mio_..._cmd  |   | trf_..._cmd  |
-                  +--------------+   +--------------+
-                        |      ____________|_____________
-                        |     |                          |
-                  +------------------+       +-------------------+
-DRIVER            | MIO Helper       |       | evtl: TRF-Driver  |
-                  | mio_...          |       | (IRQ, ... )       |
-                  +------------------+       +-------------------+
-                          |    __________________________|
-                          |   |
-                  +------------------+
-BUS ABSTRACTION   | MultiIO (sw)     |
-                  |                  |
-                  +------------------+
-                      |   |   |___________________________
-                      |   |_____________                  |
-                      |                 |                 |
-                  +----------+   +-----------------+   +------+
-BUS DRIVER        | SPI      |   | SPI-Addressable |   | UCC  |
-                  +----------+   +-----------------+   +------+
+The following steps are necessary to load the application into the UID board:
+
+* Connect serial port (via debug adapter), network and power to UID.
+* Start the Bootloader by pressing any key while booting
+* Find out the IP-Address of the UID-Board with the command `ifconfig` on the
+  bootloader console.
+* Make sure, that your computer is in the same network.
+* Upload the `b-br_uid/app.bin` to `/ffs/br_uid.bin` (or whatever is configured
+  in `/ffs/br_uid.ini`) via ftp. A console command to do this would be `curl -T
+  b-br_uid/app.bin ftp://192.168.100.74/ffs/br_uid.bin`
+
+
+== Basic Structure of the Demo application
+
+----
+                               +---------+
+USER                           | User    |
+                               +---------+
+                                   | | |______________________
+                      _____________| |______                  |
+                     |                      |                 |
+                     |                      |                 |
+                  +--------------+   +--------------+   +--------------+
+SHELL             | Commands TRF |   | Commands MIO |   | Commands NCV |
+                  | trf_..._cmd  |   | mio_..._cmd  |   | ncv_..._cmd  |
+                  +--------------+   +--------------+   +--------------+
+                        |  |                    |            |  |
+                        |  |_________________   |     _______|  |________
+                        |                    |  |    |                   |
+                        |                    |  |    |                   |
+                  +------------------+   +-------------------+   +----------------+
+DRIVER            | evtl: TRF-Driver |   | MIO Helper        |   | NCV-driver     |
+                  | (IRQ, ... )      |   | mio_...           |   |                |
+                  +------------------+   +-------------------+   +----------------+
+                          |                       |                      |
+                          |___________________    |    __________________|
+                                              |   |   |
+                                              |   |   |
+                                         +------------------+
+BUS ABSTRACTION                          | MultiIO (sw)     |
+                                         |                  |
+                                         +------------------+
+                                              |   |   |
+                                ______________|   |   |____________
+                               |                  |                |
+                               |                  |                |
+                          +----------+   +-----------------+   +------+
+BUS DRIVER                | SPI      |   | SPI-Addressable |   | UCC  |
+(only one used)           +----------+   +-----------------+   +------+
+----
