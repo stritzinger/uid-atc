@@ -1,5 +1,9 @@
 Changelog:
-V 0.5:
+V 0.7:
+- Add NCV_write
+- Add NCV_read
+
+V 0.6:
 - Add MIO_input
 - Add NCV_wr
 
@@ -9,11 +13,13 @@ V 0.5:
 - Rename TRF_spi_raw command to MIO_raw
 
 V 0.4:
+NOTE: Adaption for MultiIO.
 - Use addressable spi driver
 - Add TRF_spi_raw command
 - Add dummy write to SPI addressable
 
 V 0.3:
+NOTE: Only for versions without MultiIO. The TRF is addressed directly.
 - LED gos on while a tag is beein detected by command TRF_tag_detect
 - Detection done by command TRF_tag_detect sped up
 - Controls the multiplexer to select the SPI interface

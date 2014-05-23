@@ -63,7 +63,7 @@ static void Init(rtems_task_argument arg)
   rtems_device_major_number id_major_led = 0;
   rtems_device_major_number id_major_ncv = 0;
 
-  printf( "\nuid-demo Version 0.6\n" );
+  printf( "\nuid-demo Version 0.7\n" );
 
   sc = bsp_register_i2c();
   assert( sc == RTEMS_SUCCESSFUL );
@@ -78,7 +78,6 @@ static void Init(rtems_task_argument arg)
     assert( sc == RTEMS_SUCCESSFUL );
     eno = rtems_status_code_to_errno( sc );
   }
-/*
   if( eno == 0 ) {
     sc = rtems_io_register_driver(
       0,
@@ -88,7 +87,6 @@ static void Init(rtems_task_argument arg)
     assert( sc == RTEMS_SUCCESSFUL );
     eno = rtems_status_code_to_errno( sc );
   }
-*/
 
   multiplexer_init();
   chip_select_init();
@@ -235,7 +233,6 @@ static void Init(rtems_task_argument arg)
       eno = EFAULT;
     }
   }
-/*
   if( eno == 0 ) {
     cmd = rtems_shell_add_cmd_struct(&ncv7608_cmd_write);
     assert( cmd == &ncv7608_cmd_write );
@@ -250,7 +247,6 @@ static void Init(rtems_task_argument arg)
       eno = EFAULT;
     }
   }
-*/
   if( eno == 0 ) {
     sc = rtems_shell_init(
       "SHLL",

@@ -35,20 +35,12 @@ typedef struct {
 {                                     \
   0,                                  \
   0,                                  \
-  0                                   \
+  RTEMS_EVENT_0                       \
 }
 
 #define BUF_SIZE 2
 
 static ncv7608_context ncv7608_the_context = NCV7608_CONTEXT_INITIALIZER();
-
-static uint8_t ncv7680_reverse_byte( uint8_t val )
-{
-  val = ( (uint8_t)( ( val & 0xaa ) >> 1 ) | (uint8_t)( ( val & 0x55 ) << 1 ) );
-  val = ( (uint8_t)( ( val & 0xcc ) >> 2 ) | (uint8_t)( ( val & 0x33 ) << 2 ) );
-
-  return ( (uint8_t)( val >> 4 ) | (uint8_t)( val << 4 ) );
-}
 
 rtems_device_driver ncv7608_init(
   rtems_device_major_number id_major,
@@ -81,7 +73,7 @@ static rtems_status_code rw_from_context( uint8_t read_buf[BUF_SIZE] )
   uint8_t write_buf[]                  = { 0x00, 0x00 };
   const multiio_bus_driver *BUS_DRIVER = multiio_get_bus_driver();
   multiio_reply reply_data             = MULTIIO_REPLY_INITIALIZER(
-    &read_buf[0],
+    read_buf,
     rtems_task_self(),
     ncv7608_the_context.id_event_reply_ready,
     MULTIIO_ADDR_DIG_OP
@@ -89,8 +81,8 @@ static rtems_status_code rw_from_context( uint8_t read_buf[BUF_SIZE] )
   multiio_exchange_data exchange_data;
   int eno;
 
-  write_buf[0] = ncv7680_reverse_byte( ncv7608_the_context.driver_en );
-  write_buf[1] = ncv7680_reverse_byte( ncv7608_the_context.diag_en );
+  write_buf[0] = ncv7608_the_context.driver_en;
+  write_buf[1] = ncv7608_the_context.diag_en;
 
   exchange_data.address        = MULTIIO_ADDR_DIG_OP;
   exchange_data.write_buf      = &write_buf[0];
@@ -109,8 +101,8 @@ static rtems_status_code rw_from_context( uint8_t read_buf[BUF_SIZE] )
       &buf_read
     );
     if( eno == 0 ) {
-      read_buf[0] = ncv7680_reverse_byte( buf_read[0] );
-      read_buf[1] = ncv7680_reverse_byte( buf_read[1] );
+      read_buf[0] = buf_read[0];
+      read_buf[1] = buf_read[1];
       sc = RTEMS_SUCCESSFUL;
     }
   }
@@ -130,7 +122,7 @@ rtems_device_driver ncv7608_read(
 
   (void)id_major;
 
-  if (rw->count == 2 && id_minor == NCV7608_ID_MINOR ) {
+  if (rw->count >= 2 && id_minor == NCV7608_ID_MINOR ) {
     sc = rw_from_context( buf );
   }
   
