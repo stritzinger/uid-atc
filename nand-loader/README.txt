@@ -92,3 +92,11 @@ section is present in the configuration file this image will be started.  In
 case a valid _nfs_ section is present in the configuration file this image will
 be started.  If both sections are present, then the image of the _file_ section
 has priority.
+
+=== Recovering from bad settings
+
+If there are any problems with the settings (eg. timeout is set to 0) so that
+there is no possibility to get into the bootloader, it is possible to reset to
+the default settings by loading and executing the stage-1-loader-application
+into the RAM via a debugger. It will restore defaults and exit. After a reboot,
+the bootloader should show up again.
