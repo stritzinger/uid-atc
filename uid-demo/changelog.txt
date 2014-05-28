@@ -1,4 +1,8 @@
 Changelog:
+V 0.8:
+- Set TRF to 5V supply
+- Make use of MultiIO configurable via a USE_MULTIIO define
+
 V 0.7:
 - Add NCV_write
 - Add NCV_read

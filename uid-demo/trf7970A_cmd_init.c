@@ -26,6 +26,7 @@
 #include <rtems/shell.h>
 #include "multiio.h"
 #include "trf7970A_impl.h"
+#include "config_uid.h"
 
 static int trf7970A_cmd_init_func( int argc, char **argv )
 {
@@ -62,7 +63,11 @@ static int trf7970A_cmd_init_func( int argc, char **argv )
        - Direct mode 0
        - Active mode */
     eno = trf7979A_cmd_raw_string(
+#ifdef USE_MULTIIO
+      "TRF_init 00 21",
+#else /* USE_MULTIIO */
       "TRF_init 00 20",
+#endif /* USE_MULTIIO */
       &read_buf[0],
       MULTIIO_READ_BUF_SIZE
     );

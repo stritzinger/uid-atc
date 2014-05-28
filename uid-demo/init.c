@@ -30,6 +30,7 @@
 #include "mio.h"
 #include "chip_select.h"
 #include "multiplexer.h"
+#include "config_uid.h"
 
 #define SHELL_STACK_SIZE (8 * 1024)
 
@@ -63,7 +64,7 @@ static void Init(rtems_task_argument arg)
   rtems_device_major_number id_major_led = 0;
   rtems_device_major_number id_major_ncv = 0;
 
-  printf( "\nuid-demo Version 0.7\n" );
+  printf( "\nuid-demo Version 0.8\n" );
 
   sc = bsp_register_i2c();
   assert( sc == RTEMS_SUCCESSFUL );
@@ -78,6 +79,7 @@ static void Init(rtems_task_argument arg)
     assert( sc == RTEMS_SUCCESSFUL );
     eno = rtems_status_code_to_errno( sc );
   }
+#ifdef USE_MULTIIO
   if( eno == 0 ) {
     sc = rtems_io_register_driver(
       0,
@@ -87,13 +89,18 @@ static void Init(rtems_task_argument arg)
     assert( sc == RTEMS_SUCCESSFUL );
     eno = rtems_status_code_to_errno( sc );
   }
+#endif /* USE_MULTIIO */
 
   multiplexer_init();
   chip_select_init();
 
   if( eno == 0 ) {
     eno = mio_init(
+#ifdef USE_MULTIIO
       &spi_addressable_bus_driver,
+#else
+      &spi_bus_driver,
+#endif /* USE_MULTIIO */
       RTEMS_EVENT_0
     );
     assert( eno == 0 );
@@ -114,6 +121,7 @@ static void Init(rtems_task_argument arg)
       eno = EFAULT;
     }
   }
+#ifdef USE_MULTIIO
   if( eno == 0 ) {
     cmd = rtems_shell_add_cmd_struct(&mio_cmd_input);
     assert( cmd == &mio_cmd_input );
@@ -121,6 +129,7 @@ static void Init(rtems_task_argument arg)
       eno = EFAULT;
     }
   }
+#endif /* USE_MULTIIO */
   if( eno == 0 ) {
     cmd = rtems_shell_add_cmd_struct(&exception_command);
     assert( cmd == &exception_command );
@@ -226,6 +235,7 @@ static void Init(rtems_task_argument arg)
       eno = EFAULT;
     }
   }
+#ifdef USE_MULTIIO
   if( eno == 0 ) {
     cmd = rtems_shell_add_cmd_struct(&ncv7608_cmd_wr);
     assert( cmd == &ncv7608_cmd_wr );
@@ -247,6 +257,7 @@ static void Init(rtems_task_argument arg)
       eno = EFAULT;
     }
   }
+#endif /* USE_MULTIIO */
   if( eno == 0 ) {
     sc = rtems_shell_init(
       "SHLL",
