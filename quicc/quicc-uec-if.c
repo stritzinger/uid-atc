@@ -395,55 +395,7 @@ static void uec_if_tx_task(void *arg)
 static void uec_if_pin_config(void)
 {
   #ifdef MPC83XX_BOARD_BR_UID
-    /* PHY reset */
-    int phy_reset_pin = 36;
-    uint32_t phy_reset_bit = BSP_BBIT32(phy_reset_pin % 32);
-    volatile m83xxGPIORegisters_t *phy_reset_gpio = &mpc83xx.gpio[phy_reset_pin / 32];
-
-    /* PHY configuration */
-    int config0_pin = 16;
-    int config1_pin = 17;
-    int config2_pin = 19;
-    int phyad0_pin = 24;
-    int phyad1_pin = 23;
-    int phyad2_pin = 22;
-    uint32_t phy_cfg_bits = BSP_BBIT32(config0_pin)
-      | BSP_BBIT32(config1_pin)
-      | BSP_BBIT32(config2_pin)
-      | BSP_BBIT32(phyad0_pin)
-      | BSP_BBIT32(phyad1_pin)
-      | BSP_BBIT32(phyad2_pin);
-    volatile m83xxGPIORegisters_t *phy_cfg_gpio = &mpc83xx.gpio[0];
-
-    rtems_interval tsr = (rtems_clock_get_ticks_per_second() + 100 - 1) / 100 + 1;
-    rtems_interval tmdio = 2;
     volatile m83xxSysConRegisters_t *syscon = &mpc83xx.syscon;
-
-    /* Disable pull-up for FEC1 block */
-    syscon->gpr_1 |= BSP_BBIT32(1);
-
-    /* Set GPIO pin function for FEC1 block */
-    syscon->sicrl = BSP_BFLD32SET(syscon->sicrl, 0x2, 28, 29);
-
-    /* Set PHY configuration pins to LOW */
-    phy_cfg_gpio->gpimr &= ~phy_cfg_bits;
-    phy_cfg_gpio->gpdr &= ~phy_cfg_bits;
-    phy_cfg_gpio->gpdat &= ~phy_cfg_bits;
-    phy_cfg_gpio->gpdir |= phy_cfg_bits;
-
-    /* Set GPIO pin function for USB_D block */
-    syscon->sicrh = BSP_BFLD32SET(syscon->sicrh, 0x2, 12, 13);
-
-    phy_reset_gpio->gpimr &= ~phy_reset_bit;
-    phy_reset_gpio->gpdr &= ~phy_reset_bit;
-    phy_reset_gpio->gpdat &= ~phy_reset_bit;
-    phy_reset_gpio->gpdir |= phy_reset_bit;
-
-    rtems_task_wake_after(tsr);
-
-    phy_reset_gpio->gpdat |= phy_reset_bit;
-
-    rtems_task_wake_after(tmdio);
 
     /* Set FEC1 pin function for FEC1 block */
     syscon->sicrl = BSP_BFLD32SET(syscon->sicrl, 0x0, 28, 29);
