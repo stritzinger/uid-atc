@@ -512,6 +512,25 @@ static void uec_if_pin_config(void)
   #ifdef MPC83XX_BOARD_BR_UID
     volatile m83xxSysConRegisters_t *syscon = &mpc83xx.syscon;
 
+    /* PHY reset */
+    int phy_reset_pin = 5;
+    uint32_t phy_reset_bit = BSP_BBIT32(phy_reset_pin % 32);
+    volatile m83xxGPIORegisters_t *phy_reset_gpio = &mpc83xx.gpio[phy_reset_pin / 32];
+
+    /* Set GPIO pin function for HDLC1_A block */
+    syscon->sicrh = BSP_BFLD32SET(syscon->sicrh, 0x1, 2, 3);
+
+    phy_reset_gpio->gpimr &= ~phy_reset_bit;
+    phy_reset_gpio->gpdr &= ~phy_reset_bit;
+    phy_reset_gpio->gpdat &= ~phy_reset_bit;
+    phy_reset_gpio->gpdir |= phy_reset_bit;
+
+    rtems_task_wake_after(10);
+
+    phy_reset_gpio->gpdat |= phy_reset_bit;
+
+    rtems_task_wake_after(10);
+
     /* Set FEC1 pin function for FEC1 block */
     syscon->sicrl = BSP_BFLD32SET(syscon->sicrl, 0x0, 28, 29);
 
