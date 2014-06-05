@@ -75,6 +75,10 @@
 #include <bsp/irq.h>
 #include <bsp/utility.h>
 
+#ifdef MPC83XX_BOARD_BR_UID
+  #include <mpc83xx/mpc83xx_spidrv.h>
+#endif
+
 #include "quicc.h"
 
 #define ASSERT_SC(sc) assert((sc) == RTEMS_SUCCESSFUL)
@@ -88,6 +92,10 @@
 #define UEC_IF_RX_UCCE_FLAGS QUICC_UCF_UCCE_UEC_RXB0
 
 #define UEC_IF_TX_UCCE_FLAGS (QUICC_UCF_UCCE_UEC_TXE | QUICC_UCF_UCCE_UEC_TXB0)
+
+#ifdef MPC83XX_BOARD_BR_UID
+  #define KSZ8864_CS_PIN 0
+#endif
 
 typedef struct {
   uint32_t rx_interrupts;
@@ -512,6 +520,16 @@ static void uec_if_pin_config(void)
   #ifdef MPC83XX_BOARD_BR_UID
     volatile m83xxSysConRegisters_t *syscon = &mpc83xx.syscon;
 
+    /* KSZ8864 Chip select */
+    int ksz8864_cs_pin = KSZ8864_CS_PIN;
+    uint32_t ksz8864_cs_bit = BSP_BBIT32(ksz8864_cs_pin % 32);
+    volatile m83xxGPIORegisters_t *ksz8864_cs_gpio = &mpc83xx.gpio[ksz8864_cs_pin / 32];
+
+    /* Multiplexer */
+    int mux_pin = 3;
+    uint32_t mux_bit = BSP_BBIT32(mux_pin % 32);
+    volatile m83xxGPIORegisters_t *mux_gpio = &mpc83xx.gpio[mux_pin / 32];
+
     /* PHY reset */
     int phy_reset_pin = 5;
     uint32_t phy_reset_bit = BSP_BBIT32(phy_reset_pin % 32);
@@ -520,6 +538,19 @@ static void uec_if_pin_config(void)
     /* Set GPIO pin function for HDLC1_A block */
     syscon->sicrh = BSP_BFLD32SET(syscon->sicrh, 0x1, 2, 3);
 
+    /* Setup chip select pin to high */
+    ksz8864_cs_gpio->gpimr &= ~ksz8864_cs_bit;
+    ksz8864_cs_gpio->gpdr &= ~ksz8864_cs_bit;
+    ksz8864_cs_gpio->gpdat |= ksz8864_cs_bit;
+    ksz8864_cs_gpio->gpdir |= ksz8864_cs_bit;
+
+    /* Multiplexer */
+    mux_gpio->gpimr &= ~mux_bit;
+    mux_gpio->gpdr &= ~mux_bit;
+    mux_gpio->gpdat &= ~mux_bit;
+    mux_gpio->gpdir |= mux_bit;
+
+    /* Setup reset pin to low */
     phy_reset_gpio->gpimr &= ~phy_reset_bit;
     phy_reset_gpio->gpdr &= ~phy_reset_bit;
     phy_reset_gpio->gpdat &= ~phy_reset_bit;
@@ -539,6 +570,96 @@ static void uec_if_pin_config(void)
   #endif
 }
 
+
+#ifdef MPC83XX_BOARD_BR_UID
+static void ksz8864rmn_chip_select(void)
+{
+  int ksz8864_cs_pin = KSZ8864_CS_PIN;
+  uint32_t ksz8864_cs_bit = BSP_BBIT32(ksz8864_cs_pin % 32);
+  volatile m83xxGPIORegisters_t *ksz8864_cs_gpio = &mpc83xx.gpio[ksz8864_cs_pin / 32];
+
+  ksz8864_cs_gpio->gpdat &= ~ksz8864_cs_bit;
+}
+
+static void ksz8864rmn_chip_deselect(void)
+{
+  int ksz8864_cs_pin = KSZ8864_CS_PIN;
+  uint32_t ksz8864_cs_bit = BSP_BBIT32(ksz8864_cs_pin % 32);
+  volatile m83xxGPIORegisters_t *ksz8864_cs_gpio = &mpc83xx.gpio[ksz8864_cs_pin / 32];
+
+  ksz8864_cs_gpio->gpdat |= ksz8864_cs_bit;
+}
+
+mpc83xx_spi_desc_t spi_bus_handle;
+
+static rtems_status_code ksz8864rmn_spi_rw(
+  quicc_uec_context *uec_context,
+  int smi_addr,
+  bool do_write,
+  uint8_t *data
+) {
+  uint8_t write[] = {
+    do_write ? 0x2 : 0x3,
+    (uint8_t)smi_addr,
+    *data
+  };
+  uint8_t read[sizeof(write) / sizeof(write[0])];
+  int bytes_received = 0;
+
+  ksz8864rmn_chip_select();
+  bytes_received = mpc83xx_spi_read_write_bytes(
+    &spi_bus_handle.bus_desc,
+    read,
+    write,
+    sizeof(write) / sizeof(write[0])
+  );
+  ksz8864rmn_chip_deselect();
+
+  if(bytes_received == sizeof(write) / sizeof(write[0])) {
+    *data = read[2];
+    return RTEMS_SUCCESSFUL;
+  } else {
+    return RTEMS_IO_ERROR;
+  }
+}
+
+static rtems_status_code init_spi(void)
+{
+  rtems_status_code sc = RTEMS_SUCCESSFUL;
+
+  const rtems_libi2c_tfr_mode_t TRF_MODE = {
+    1000000, /* maximum bits per second */
+    8,       /* how many bits per byte/word/longword? */
+    false,   /* true: send LSB first                  */
+    true,    /* true: inverted clock (high active)    */
+    true,    /* true: clock starts toggling at start of data tfr */
+    0x00     /* This character will be continuously transmitted in read only functions */
+  };
+
+  memset( &spi_bus_handle, 0, sizeof(spi_bus_handle) );
+
+  spi_bus_handle.softc.reg_ptr = &mpc83xx.spi;
+  spi_bus_handle.softc.initialized = false;
+  spi_bus_handle.softc.irq_number = BSP_IPIC_IRQ_SPI;
+  spi_bus_handle.softc.base_frq = BSP_bus_frequency;
+  spi_bus_handle.softc.irq_sema_id = RTEMS_ID_NONE;
+  spi_bus_handle.softc.curr_addr = 0;
+  spi_bus_handle.softc.idle_char = 0x00;
+  spi_bus_handle.softc.bytes_per_char = 1;
+  spi_bus_handle.softc.bit_shift = 16;
+
+  if (sc == RTEMS_SUCCESSFUL) {
+    sc = mpc83xx_spi_init( &spi_bus_handle.bus_desc );
+  }
+  if (sc == RTEMS_SUCCESSFUL) {
+    sc = mpc83xx_spi_set_tfr_mode(&spi_bus_handle.bus_desc, &TRF_MODE);
+  }
+
+  return sc;
+}
+
+#else /* MPC83XX_BOARD_BR_UID */
+
 static int ksz8864rmn_smi_phy_addr(int smi_addr)
 {
   return 0x6 | ((smi_addr & 0xc0) >> 3) | ((smi_addr & 0x20) >> 5);
@@ -548,31 +669,66 @@ static int ksz8864rmn_smi_reg_addr(int smi_addr)
 {
   return smi_addr & 0x1f;
 }
+#endif /* MPC83XX_BOARD_BR_UID */
 
-static uint8_t ksz8864rmn_smi_read(quicc_uec_context *uec_context, int smi_addr)
+static rtems_status_code ksz8864rmn_smi_read(
+  quicc_uec_context *uec_context,
+  int smi_addr,
+  uint8_t *value
+)
 {
+#ifdef MPC83XX_BOARD_BR_UID
+  rtems_status_code sc = RTEMS_SUCCESSFUL;
+  sc = ksz8864rmn_spi_rw(uec_context, smi_addr, false, value);
+  return sc;
+#else
   int phy_addr = ksz8864rmn_smi_phy_addr(smi_addr);
   int reg_addr = ksz8864rmn_smi_reg_addr(smi_addr);
 
-  return (uint8_t) quicc_uec_mii_read(uec_context, phy_addr, reg_addr);
+  *value = (uint8_t) quicc_uec_mii_read(uec_context, phy_addr, reg_addr);
+  return RTEMS_SUCCESSFUL;
+#endif
 }
 
-static void ksz8864rmn_smi_write(quicc_uec_context *uec_context, int smi_addr, uint8_t value)
+static rtems_status_code ksz8864rmn_smi_write(
+  quicc_uec_context *uec_context,
+  int smi_addr,
+  uint8_t value
+)
 {
+#ifdef MPC83XX_BOARD_BR_UID
+  rtems_status_code sc = RTEMS_SUCCESSFUL;
+  sc = ksz8864rmn_spi_rw(uec_context, smi_addr, true, &value);
+  return sc;
+#else
   int phy_addr = ksz8864rmn_smi_phy_addr(smi_addr);
   int reg_addr = ksz8864rmn_smi_reg_addr(smi_addr);
 
   quicc_uec_mii_write(uec_context, phy_addr, reg_addr, value);
+  return RTEMS_SUCCESSFUL;
+#endif
 }
 
-static void ksz8864rmn_enable_switch(quicc_uec_context *uec_context)
+static rtems_status_code ksz8864rmn_enable_switch(quicc_uec_context *uec_context)
 {
-  uint8_t chip_id = ksz8864rmn_smi_read(uec_context, 0);
-  uint8_t revision_id = ksz8864rmn_smi_read(uec_context, 1);
+  uint8_t chip_id = 0;
+  uint8_t revision_id = 0;
+  rtems_status_code sc = RTEMS_SUCCESSFUL;
 
-  if (chip_id == 0x95 && revision_id == 0x40) {
-    ksz8864rmn_smi_write(uec_context, 1, 0x1);
+  if (sc == RTEMS_SUCCESSFUL) {
+    sc = ksz8864rmn_smi_read(uec_context, 0, &chip_id);
   }
+  if (sc == RTEMS_SUCCESSFUL) {
+    sc = ksz8864rmn_smi_read(uec_context, 1, &revision_id);
+  }
+
+  if (sc == RTEMS_SUCCESSFUL) {
+    if (chip_id == 0x95 && revision_id == 0x40) {
+      sc = ksz8864rmn_smi_write(uec_context, 1, 0x1);
+    }
+  }
+
+  return sc;
 }
 
 static bool uec_if_is_phy_addr_valid(int phy_addr)
@@ -580,18 +736,21 @@ static bool uec_if_is_phy_addr_valid(int phy_addr)
   return (phy_addr & 0x1f) == phy_addr;
 }
 
-static void uec_if_phy_init(uec_if_context *self)
+static rtems_status_code uec_if_phy_init(uec_if_context *self)
 {
   quicc_uec_context *uec_context = &self->uec_context;
   int phy_addr = self->uec_config.phy_address;
+  rtems_status_code sc = RTEMS_SUCCESSFUL;
 
   if (uec_if_is_phy_addr_valid(phy_addr)) {
     uint16_t bmcr = quicc_uec_mii_read(uec_context, phy_addr, MII_BMCR);
     bmcr = (uint16_t) (bmcr & ~(BMCR_PDOWN | BMCR_ISO));
     quicc_uec_mii_write(uec_context, phy_addr, MII_BMCR, bmcr);
   } else {
-    ksz8864rmn_enable_switch(uec_context);
+    sc = ksz8864rmn_enable_switch(uec_context);
   }
+
+  return sc;
 }
 
 #ifdef NEW_NETWORK_STACK
@@ -661,12 +820,21 @@ static void uec_if_interface_init(void *arg)
 #endif /* NEW_NETWORK_STACK */
 
   uec_if_pin_config();
+#ifdef MPC83XX_BOARD_BR_UID
+  if (init_spi() != RTEMS_SUCCESSFUL) {
+    uec_if_unlock(self);
+    return;
+  }
+#endif
 
   quicc_irq_init(quicc_init());
   quicc_ucf_init(&self->ucf_context, &self->ucf_config);
   quicc_uec_init(&self->uec_context, &self->ucf_context, &self->uec_config);
 
-  uec_if_phy_init(self);
+  if (uec_if_phy_init(self) != RTEMS_SUCCESSFUL) {
+    uec_if_unlock(self);
+    return;
+  }
 
   quicc_uec_set_mac_address(&self->uec_context, uec_if_get_mac_address(self));
   quicc_uec_mac_enable(&self->uec_context, QUICC_DIR_RX_AND_TX);
