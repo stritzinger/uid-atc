@@ -16,6 +16,9 @@ APP_PIECES =                    \
   ncv7608_cmd_read              \
   spi                           \
   spi_addressable               \
+  i2cds2408                     \
+  i2cds2408_cmd_read            \
+  i2cds2408_cmd_write           \
   mio_init                      \
   mio_cmd_raw                   \
   mio_cmd_input                 \

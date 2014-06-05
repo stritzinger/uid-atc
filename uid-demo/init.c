@@ -31,6 +31,8 @@
 #include "chip_select.h"
 #include "multiplexer.h"
 #include "config_uid.h"
+#include "i2cds2408.h"
+#include "i2cds2408_cmd.h"
 
 #define SHELL_STACK_SIZE (8 * 1024)
 
@@ -56,6 +58,19 @@ static rtems_shell_cmd_t exception_command = {
   NULL
 };
 
+static rtems_status_code InitI2C(void)
+{
+  int sc = rtems_libi2c_register_drv(
+        "DS2408",
+        i2c_ds2408_driver_descriptor,
+        0, /* FIXME get correct bus number*/
+        0x18);
+  if (sc >= 0) {
+    sc = -RTEMS_SUCCESSFUL;
+  }
+  return -sc;
+}
+
 static void Init(rtems_task_argument arg)
 {
   rtems_status_code  sc = RTEMS_SUCCESSFUL;
@@ -64,7 +79,7 @@ static void Init(rtems_task_argument arg)
   rtems_device_major_number id_major_led = 0;
   rtems_device_major_number id_major_ncv = 0;
 
-  printf( "\nuid-demo Version 0.8\n" );
+  printf( "\nuid-demo Version 0.9\n" );
 
   sc = bsp_register_i2c();
   assert( sc == RTEMS_SUCCESSFUL );
@@ -89,6 +104,26 @@ static void Init(rtems_task_argument arg)
     assert( sc == RTEMS_SUCCESSFUL );
     eno = rtems_status_code_to_errno( sc );
   }
+  if( eno == 0 ) {
+    sc = InitI2C();
+    assert( sc == RTEMS_SUCCESSFUL );
+    eno = rtems_status_code_to_errno( sc );
+  }
+  if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&ds2408_cmd_read);
+    assert( cmd == &ds2408_cmd_read );
+    if( cmd != &ds2408_cmd_read ) {
+      eno = EFAULT;
+    }
+  }
+  if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&ds2408_cmd_write);
+    assert( cmd == &ds2408_cmd_write );
+    if( cmd != &ds2408_cmd_write ) {
+      eno = EFAULT;
+    }
+  }
+
 #endif /* USE_MULTIIO */
 
   multiplexer_init();

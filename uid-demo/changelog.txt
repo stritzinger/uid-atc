@@ -1,4 +1,9 @@
 Changelog:
+V 0.9:
+- Add 1-Wire
+- Add Ant_read
+- Add Ant_LED
+
 V 0.8:
 - Set TRF to 5V supply
 - Make use of MultiIO configurable via a USE_MULTIIO define
