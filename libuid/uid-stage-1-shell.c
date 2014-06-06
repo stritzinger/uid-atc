@@ -5,7 +5,7 @@
  *  Dornierstr. 4
  *  82178 Puchheim
  *  Germany
- *  <info@embedded-brains.de>
+ *  <rtems@embedded-brains.de>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -29,31 +29,56 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef UID_UID_H
-#define UID_UID_H
+#include <assert.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <stdio.h>
 
-#include <stdbool.h>
+#include "uid.h"
 
-#include <rtems/shell.h>
+static int stage_1_update(int argc, char **argv)
+{
+	uint8_t *buf;
+	size_t bufsz;
+	int fd;
+	int rv;
+	struct stat st;
+	ssize_t n;
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
+	if (argc != 2) {
+		return 1;
+	}
 
-bool uid_init_flash_file_system(const char *mount_path);
+	fd = open(argv[1], O_RDONLY);
+	if (fd < 0) {
+		perror("cannot open binary image");
+		return 1;
+	}
 
-void uid_format_flash_file_system(void);
+	rv = fstat(fd, &st);
+	assert(rv == 0);
 
-void uid_print_bad_blocks(void);
+	bufsz = (size_t) st.st_size;
+	buf = malloc(bufsz);
+	assert(buf != NULL);
 
-bool uid_init_network(const char *ini_file);
+	n = read(fd, &buf[0], bufsz);
+	assert(n == (ssize_t) bufsz);
 
-void uid_stage_1_update(const uint8_t *begin, size_t size);
+	uid_stage_1_update(&buf[0], bufsz);
+	free(buf);
+	close(fd);
 
-extern rtems_shell_cmd_t uid_shell_stage_1_update;
-
-#ifdef __cplusplus
+	return 0;
 }
-#endif /* __cplusplus */
 
-#endif /* UID_UID_H */
+rtems_shell_cmd_t uid_shell_stage_1_update = {
+	"stage_1_update",
+	"stage_1_update <STAGE-1-BINARY-IMAGE>",
+	"app",
+	stage_1_update,
+	NULL,
+	NULL
+};
