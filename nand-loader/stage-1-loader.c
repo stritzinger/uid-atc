@@ -210,92 +210,6 @@ static void reset_nand_chip(void)
 	rtems_task_wake_after(1);
 }
 
-static void verify_stage_1_4k(const bed_partition *part)
-{
-	printf("verify begin\n");
-
-	assert(SIZE_4K == 4096);
-
-	bed_address page_0 = get_empty_page(part, bed_size(part) - bed_page_size(part));
-	bed_address page_1 = get_empty_page(part, page_0);
-
-	disable_micron_ecc();
-
-	write_page_auto_oob(part, page_0, &stage_1_4k_data[0]);
-	write_page_auto_oob(part, page_1, &stage_1_4k_data[PAGE_SIZE]);
-
-	enable_micron_ecc();
-
-	read_page(part, page_0, &tmp_4k_data[0], &stage_1_4k_oob[0], false);
-	read_page(part, page_1, &tmp_4k_data[PAGE_SIZE], &stage_1_4k_oob[OOB_SIZE], false);
-
-	assert(memcmp(&stage_1_4k_data[0], &tmp_4k_data[0], SIZE_4K) == 0);
-
-	int i;
-	for (i = 0; i < SIZE_4K * 8; ++i) {
-		//printf("test bit %i\n", i);
-
-		page_0 = get_empty_page(part, page_1);
-		page_1 = get_empty_page(part, page_0);
-
-		memcpy(&tmp_4k_data[0], &stage_1_4k_data[0], SIZE_4K);
-		memcpy(&tmp_4k_oob[0], &stage_1_4k_oob[0], OOB_SIZE_4K);
-
-		int byte_index = i >> 3;
-		int bit_index = i & 0x7;
-		tmp_4k_data[byte_index] ^= (uint8_t) (1 << bit_index);
-
-		disable_micron_ecc();
-
-		/*
-		 * The Micron chip will report write errors for blocks with a
-		 * recent read error.  We have to reset the chip internal
-		 * state.
-		 */
-		reset_nand_chip();
-
-		write_page(part, page_0, &tmp_4k_data[0], &tmp_4k_oob[0]);
-		write_page(part, page_1, &tmp_4k_data[PAGE_SIZE], &tmp_4k_oob[OOB_SIZE]);
-
-		enable_micron_ecc();
-
-		bool read_ok = read_page(part, page_0, &tmp_4k_data[0], &tmp_4k_oob[0], false);
-		if (!read_ok) {
-			printf("%08x.%i: read error 0\n", byte_index, bit_index);
-		}
-
-		read_ok = read_page(part, page_1, &tmp_4k_data[PAGE_SIZE], &tmp_4k_oob[OOB_SIZE], false);
-		if (!read_ok) {
-			printf("%08x.%i: read error 1\n", byte_index, bit_index);
-		}
-
-		if (memcmp(&stage_1_4k_oob[0], &tmp_4k_oob[0], OOB_SIZE_4K) != 0) {
-			printf("%08x.%i: corrupt OOB\n", byte_index, bit_index);
-		}
-
-		if ((memcmp(&stage_1_4k_data[0], &tmp_4k_data[0], SIZE_4K) != 0)) {
-			printf("%08x.%i: corrupt data\n", byte_index, bit_index);
-
-			int i;
-			for (i = 0; i < SIZE_4K; ++i) {
-				uint8_t master = stage_1_4k_data[i];
-				uint8_t actual = tmp_4k_data[i];
-				if (master != actual) {
-					printf(
-						"%08x.%i: master %02x != actual %02x\n",
-						byte_index,
-						bit_index,
-						master,
-						actual
-					);
-				}
-			}
-		}
-	}
-
-	printf("verify complete\n");
-}
-
 static void store_stage_1(const bed_partition *part)
 {
 	size_t n = (size_t) _binary_stage_1_bin_size;
@@ -388,7 +302,6 @@ static void Init(rtems_task_argument arg)
 	assert(status == BED_SUCCESS);
 
 	copy_stage_1_to_4k_buffer();
-	//verify_stage_1_4k(&fs_part);
 	store_stage_1(&stage_1_part);
 
 #if 0
