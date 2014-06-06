@@ -467,6 +467,7 @@ static void start_shell(void)
 	rtems_shell_add_cmd_struct(&test_yaffs_command);
 	rtems_shell_add_cmd_struct(&format_yaffs_command);
 	rtems_shell_add_cmd_struct(&bad_blocks_command);
+	rtems_shell_add_cmd_struct(&uid_shell_stage_1_update);
 
 	rtems_status_code sc = rtems_shell_init(
 		"SHLL",

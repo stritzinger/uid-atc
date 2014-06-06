@@ -57,6 +57,8 @@ static void Init(rtems_task_argument arg)
 
   demo_initialize_ftpd(70);
 
+  rtems_shell_add_cmd_struct(&uid_shell_stage_1_update);
+
   sc = demo_initialize_shell(10, 32 * 1024);
   assert(sc == RTEMS_SUCCESSFUL);
 
