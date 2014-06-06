@@ -38,7 +38,7 @@ $(STAGE_1).exe: $(STAGE_1_OBJS)
 	$(CCLINK) $^ -luid -lquicc -ldemo -lbed -lyaffs2 -lftpd -lnfs -lini -qnolinkcmds -T linkcmds.stage-1 -Wl,--wrap,boot_card -o $@
 
 $(STAGE_1_LOADER).exe: $(STAGE_1_LOADER_OBJS) $(BUILDDIR)/stage-1-payload.o
-	$(CCLINK) $^ -lbed -o $@
+	$(CCLINK) $^ -luid -lbed -o $@
 
 $(BUILDDIR)/stage-1-payload.o: $(BUILDDIR)/stage-1.bin
 	cd $(BUILDDIR) && $(OBJCOPY) -I binary -O elf32-powerpc -B powerpc stage-1.bin stage-1-payload.o
