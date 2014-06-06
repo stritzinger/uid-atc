@@ -97,6 +97,17 @@ has priority.
 
 If there are any problems with the settings (eg. timeout is set to 0) so that
 there is no possibility to get into the bootloader, it is possible to reset to
-the default settings by loading and executing the stage-1-loader-application
+the default settings by loading and executing the stage-1-loader application
 into the RAM via a debugger. It will restore defaults and exit. After a reboot,
 the bootloader should show up again.
+
+=== Update stage-1 via shell command
+
+It is possible to update the stage-1 via a shell command, for example:
+
+--------------------------------------------------
+[/] # stage_1_update /ffs/stage-1.bin
+--------------------------------------------------
+
+Using invalid binary images will place the board into a bad state.  There are
+no checks to prevent user errors.
