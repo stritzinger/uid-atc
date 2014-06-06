@@ -46,6 +46,8 @@ void uid_print_bad_blocks(void);
 
 bool uid_init_network(const char *ini_file);
 
+void uid_stage_1_update(const uint8_t *begin, size_t size);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
