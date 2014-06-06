@@ -598,6 +598,8 @@ static void Init(rtems_task_argument arg)
 
 #define CONFIGURE_SHELL_COMMANDS_INIT
 
+#define CONFIGURE_SHELL_COMMAND_CHMOD
+
 #include <local/demo-shell.h>
 #include <local/demo-shell-network.h>
 
