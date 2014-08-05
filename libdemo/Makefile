@@ -11,7 +11,6 @@ LIB_PIECES = \
 	demo-find-file \
 	demo-ftpd \
 	demo-ftpfs \
-	demo-httpd \
 	demo-loadelf \
 	demo-network \
 	demo-shell \
@@ -20,7 +19,6 @@ LIB_PIECES = \
 	demo-start \
 	demo-start-ftpd \
 	demo-start-ftpfs \
-	demo-start-httpd \
 	demo-start-loadelf \
 	demo-start-network \
 	demo-start-telnetd \
@@ -42,6 +40,8 @@ LIB_PIECES = \
 	test-block-devices-shell \
 	usb-break-lpc24xx \
 	usb-break-lpc32xx
+# FIXME:
+# demo-httpd and demo-start-httpd not working due to API changes in mongoose
 LIB_OBJS = $(LIB_PIECES:%=$(BUILDDIR)/%.o)
 LIB_DEPS = $(LIB_PIECES:%=$(BUILDDIR)/%.d)
 
