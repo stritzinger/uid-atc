@@ -4,10 +4,10 @@ BR UID
 == Git Repositories
 
 -------------------------------------------------------
-git clone zbfxigop@www.rtems.eu:rtems.git git-rtems
-git clone zbfxigop@www.rtems.eu:yaffs2.git git-yaffs2
-git clone zbfxigop@www.rtems.eu:bed.git git-bed
-git clone zbfxigop@www.rtems.eu:rtems-apps.git git-apps
+git clone zbfxigop@ftp.rtems.eu:rtems.git git-rtems
+git clone zbfxigop@ftp.rtems.eu:yaffs2.git git-yaffs2
+git clone zbfxigop@ftp.rtems.eu:bed.git git-bed
+git clone zbfxigop@ftp.rtems.eu:rtems-apps.git git-apps
 -------------------------------------------------------
 
 == RTEMS Installation
@@ -34,16 +34,33 @@ make install
 cd ${ROOT}/git-yaffs2
 git pull
 make clean install
+
 cd ${ROOT}/git-bed
 git pull
 make clean install
+
 cd ${ROOT}/git-apps
 git pull
-cd ${ROOT}/git-apps/quicc
-make clean install
+
 cd ${ROOT}/git-apps/libdemo
 make clean install
+
+cd ${ROOT}/git-apps/quicc
+make clean
+make
+# The make terminates with an error while building the tests. This error can be
+# ignored for the installation.
+make install
+
+cd ${ROOT}/git-apps/libini
+make clean install
+
+cd ${ROOT}/git-apps/libuid
+make clean install
 ---------------------------------------------------------
+
+After the libraries are installed, the nand-loader can be build with a simple
++make+.
 
 == Flash Partitions
 
