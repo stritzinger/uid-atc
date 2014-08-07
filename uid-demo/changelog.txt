@@ -1,4 +1,9 @@
 Changelog:
+
+V 0.10:
+- Add LED_write
+- fix NCV_write, NCV_read
+
 V 0.9:
 - Add 1-Wire
 - Add Ant_read

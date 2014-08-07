@@ -19,6 +19,7 @@ APP_PIECES =                    \
   i2cds2408                     \
   i2cds2408_cmd_read            \
   i2cds2408_cmd_write           \
+  led_cmd_write                 \
   mio_init                      \
   mio_cmd_raw                   \
   mio_cmd_input                 \

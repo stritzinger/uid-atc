@@ -79,7 +79,7 @@ static void Init(rtems_task_argument arg)
   rtems_device_major_number id_major_led = 0;
   rtems_device_major_number id_major_ncv = 0;
 
-  printf( "\nuid-demo Version 0.9\n" );
+  printf( "\nuid-demo Version 0.10\n" );
 
   sc = bsp_register_i2c();
   assert( sc == RTEMS_SUCCESSFUL );
@@ -93,6 +93,13 @@ static void Init(rtems_task_argument arg)
     );
     assert( sc == RTEMS_SUCCESSFUL );
     eno = rtems_status_code_to_errno( sc );
+  }
+  if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&led_cmd_write);
+    assert( cmd == &led_cmd_write );
+    if( cmd != &led_cmd_write ) {
+      eno = EFAULT;
+    }
   }
 #ifdef USE_MULTIIO
   if( eno == 0 ) {

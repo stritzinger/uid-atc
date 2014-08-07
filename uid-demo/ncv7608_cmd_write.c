@@ -28,8 +28,6 @@
 #include "multiio.h"
 #include "ncv7608.h"
 
-#define BUF_SIZE 2
-
 static int ncv7608_cmd_write_func( int argc, char **argv )
 {
   int eno = 0;
@@ -37,7 +35,7 @@ static int ncv7608_cmd_write_func( int argc, char **argv )
   char write;
 
   /* Check argument */
-  if( argc != 3 ) {
+  if( argc != 2 ) {
     printf( "Failure: Need exactly one argument!\n" );
     eno = EINVAL;
   }
@@ -62,6 +60,14 @@ static int ncv7608_cmd_write_func( int argc, char **argv )
   if( fputc( write, file ) != write ) {
     eno = EIO;
     printf( "Failure: Can not write to device.\n" );
+  }
+
+  if( file != NULL ) {
+    if( fclose( file ) != 0 ) {
+      if (eno == 0) {
+        eno = errno;
+      }
+    }
   }
 
   if( eno == 0 ) {

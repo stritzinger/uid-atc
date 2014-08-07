@@ -23,6 +23,7 @@
  */
 
 #include <rtems/io.h>
+#include <rtems/shell.h>
 
 #ifndef LED_H
 #define LED_H
@@ -42,6 +43,8 @@
 
 
 extern const rtems_driver_address_table led_driver_table;
+
+extern rtems_shell_cmd_t led_cmd_write;
 
 #ifdef __cplusplus
 }

@@ -25,6 +25,8 @@
 #include <inttypes.h>
 #include <rtems/shell.h>
 #include <stdio.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include "multiio.h"
 #include "ncv7608.h"
 
@@ -33,23 +35,30 @@
 static int ncv7608_cmd_read_func( int argc, char **argv )
 {
   int eno = 0;
-  FILE *file = NULL;
+  int fdes = -1;
   char input[BUF_SIZE];
 
-  file = fopen( NCV7608_DEV_NAME_BMP, "r" );
-
-  if( file == NULL ) {
+  fdes = open( NCV7608_DEV_NAME_BMP, O_RDONLY );
+  if( fdes == -1 ) {
     eno = errno;
     printf( "Failure: Can not open device.\n" );
   }
 
-  if( fgets( input, BUF_SIZE, file ) != input ) {
+  if( read( fdes, input, BUF_SIZE ) != BUF_SIZE ) {
     eno = EIO;
     printf( "Failure: Can not read from device.\n" );
   }
 
   if( eno == 0 ) {
     printf( "returns: %2x %2x\n", input[0], input[1] );
+  }
+
+  if( fdes != -1 ) {
+    if( eno == 0 ) {
+      eno = close( fdes );
+    } else {
+      close( fdes );
+    }
   }
 
   if( eno == 0 ) {
