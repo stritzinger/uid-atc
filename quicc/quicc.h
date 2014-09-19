@@ -346,6 +346,16 @@ void quicc_bd_tx_submit_and_wait(
 	void *handler_arg
 );
 
+static inline bool quicc_bd_tx_can_submit(quicc_bd_tx_context *self)
+{
+	size_t current = self->current;
+	size_t index_mask = self->index_mask;
+	size_t next = (current + 1) & index_mask;
+	volatile quicc_bd *bd = self->bd_begin + next;
+
+	return (bd->status & QUICC_BD_TX_R) == 0;
+}
+
 typedef enum {
 	QUICC_UEC_SPEED_10,
 	QUICC_UEC_SPEED_100,

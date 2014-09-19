@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2012 embedded brains GmbH.  All rights reserved.
+ * Copyright (c) 2011-2014 embedded brains GmbH.  All rights reserved.
  *
  *  embedded brains GmbH
  *  Obere Lagerstr. 30
@@ -11,6 +11,34 @@
  * found in the file LICENSE in this distribution or at
  * http://www.rtems.com/license/LICENSE.
  */
+
+#ifdef NEW_NETWORK_STACK
+
+#include <machine/rtems-bsd-kernel-space.h>
+
+#include <assert.h>
+
+#include <rtems/bsd/sys/param.h>
+#include <rtems/bsd/sys/types.h>
+#include <sys/mbuf.h>
+#include <sys/malloc.h>
+#include <sys/kernel.h>
+#include <sys/module.h>
+#include <sys/socket.h>
+#include <sys/sockio.h>
+
+#include <sys/bus.h>
+#include <machine/bus.h>
+
+#include <net/if.h>
+#include <net/ethernet.h>
+#include <net/if_arp.h>
+#include <net/if_dl.h>
+#include <net/if_media.h>
+#include <net/if_types.h>
+#include <net/if_var.h>
+
+#else /* NEW_NETWORK_STACK */
 
 #define __INSIDE_RTEMS_BSD_TCPIP_STACK__ 1
 #define __BSD_VISIBLE 1
@@ -24,7 +52,6 @@
 
 #include <rtems.h>
 #include <rtems/rtems_bsdnet.h>
-#include <rtems/rtems_mii_ioctl.h>
 
 #include <sys/param.h>
 #include <sys/socket.h>
@@ -37,6 +64,10 @@
 #include <netinet/if_ether.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
+
+#endif /* NEW_NETWORK_STACK */
+
+#include <rtems/rtems_mii_ioctl.h>
 
 #include <mpc83xx/mpc83xx.h>
 
@@ -76,7 +107,14 @@ typedef struct {
 } uec_if_statistics;
 
 typedef struct {
+#ifdef NEW_NETWORK_STACK
+  device_t dev;
+  struct ifnet *ifp;
+  struct mtx mtx;
+  struct callout watchdog_callout;
+#else /* NEW_NETWORK_STACK */
   struct arpcom arpcom;
+#endif /* NEW_NETWORK_STACK */
   struct rtems_mdio_info mdio;
   rtems_id rx_task_id;
   rtems_id tx_task_id;
@@ -89,9 +127,89 @@ typedef struct {
   bool promisc;
 } uec_if_context;
 
+/* FIXME */
+rtems_id
+rtems_bsdnet_newproc (char *name, int stacksize, void(*entry)(void *), void *arg);
+
+static void uec_if_lock(uec_if_context *self)
+{
+#ifdef NEW_NETWORK_STACK
+  mtx_lock(&self->mtx);
+#else /* NEW_NETWORK_STACK */
+  (void) self;
+#endif /* NEW_NETWORK_STACK */
+}
+
+static void uec_if_unlock(uec_if_context *self)
+{
+#ifdef NEW_NETWORK_STACK
+  mtx_unlock(&self->mtx);
+#else /* NEW_NETWORK_STACK */
+  (void) self;
+#endif /* NEW_NETWORK_STACK */
+}
+
+static struct ifnet *uec_if_get_ifp(uec_if_context *self)
+{
+#ifdef NEW_NETWORK_STACK
+  return self->ifp;
+#else /* NEW_NETWORK_STACK */
+  return &self->arpcom.ac_if;
+#endif /* NEW_NETWORK_STACK */
+}
+
+static const uint8_t *uec_if_get_mac_address(uec_if_context *self)
+{
+#ifdef NEW_NETWORK_STACK
+  return (const uint8_t *) IF_LLADDR(self->ifp);
+#else /* NEW_NETWORK_STACK */
+  return (const uint8_t *) self->arpcom.ac_enaddr;
+#endif /* NEW_NETWORK_STACK */
+}
+
+static void uec_if_send_event(rtems_id task, rtems_event_set event)
+{
+  rtems_status_code sc;
+
+#ifdef NEW_NETWORK_STACK
+  sc = rtems_event_send(task, event);
+#else /* NEW_NETWORK_STACK */
+  sc = rtems_bsdnet_event_send(task, event);
+#endif /* NEW_NETWORK_STACK */
+
+  ASSERT_SC(sc);
+}
+
+static void uec_if_wait_for_event(uec_if_context *self, rtems_event_set event)
+{
+  rtems_status_code sc;
+  rtems_event_set out;
+
+#ifdef NEW_NETWORK_STACK
+  uec_if_unlock(self);
+  sc = rtems_event_receive(
+    event,
+    RTEMS_EVENT_ANY | RTEMS_WAIT,
+    RTEMS_NO_TIMEOUT,
+    &out
+  );
+  uec_if_lock(self);
+#else /* NEW_NETWORK_STACK */
+  (void) self;
+  sc = rtems_bsdnet_event_receive(
+    event,
+    RTEMS_EVENT_ANY | RTEMS_WAIT,
+    RTEMS_NO_TIMEOUT,
+    &out
+  );
+#endif /* NEW_NETWORK_STACK */
+
+  ASSERT_SC(sc);
+  assert(event == out);
+}
+
 static void uec_if_interrupt_handler(void *arg)
 {
-  rtems_status_code sc = RTEMS_SUCCESSFUL;
   uec_if_context *self = arg;
   const quicc_ucf_context *ucf_context = &self->ucf_context;
   volatile quicc_ucf *ucf_regs = ucf_context->ucf_regs;
@@ -106,14 +224,12 @@ static void uec_if_interrupt_handler(void *arg)
 
   if ((ucce & rx_flags) != 0) {
     ++self->stats.rx_interrupts;
-    sc = rtems_bsdnet_event_send(self->rx_task_id, event);
-    ASSERT_SC(sc);
+    uec_if_send_event(self->rx_task_id, event);
   }
 
   if ((ucce & tx_flags) != 0) {
     ++self->stats.tx_interrupts;
-    sc = rtems_bsdnet_event_send(self->tx_task_id, event);
-    ASSERT_SC(sc);
+    uec_if_send_event(self->tx_task_id, event);
   }
 }
 
@@ -128,7 +244,7 @@ static void uec_if_interrupt_install(uec_if_context *self)
 
 static struct mbuf *uec_if_get_mbuf(uec_if_context *self)
 {
-  struct ifnet *ifp = &self->arpcom.ac_if;
+  struct ifnet *ifp = uec_if_get_ifp(self);
   struct mbuf *m = m_gethdr(M_WAIT, MT_DATA);
 
   MCLGET(m, M_WAIT);
@@ -165,16 +281,25 @@ static void *uec_if_bd_done_and_refill(
   ++self->stats.rx_frames;
 
   if ((status & error_flags) == 0) {
-    struct ifnet *ifp = &self->arpcom.ac_if;
+    struct ifnet *ifp = uec_if_get_ifp(self);
+#ifdef NEW_NETWORK_STACK
+    int sz = (int) QUICC_BD_LENGTH_GET(status) - ETHER_CRC_LEN;
+#else /* NEW_NETWORK_STACK */
     struct ether_header *eh = mtod(m, struct ether_header *);
-
     int sz = (int) QUICC_BD_LENGTH_GET(status) - ETHER_HDR_LEN - ETHER_CRC_LEN;
+#endif /* NEW_NETWORK_STACK */
 
     m->m_len = sz;
     m->m_pkthdr.len = sz;
-    m->m_data = mtod(m, char *) + ETHER_HDR_LEN;
 
+#ifdef NEW_NETWORK_STACK
+    uec_if_unlock(self);
+    (*ifp->if_input)(ifp, m);
+    uec_if_lock(self);
+#else /* NEW_NETWORK_STACK */
+    m->m_data = mtod(m, char *) + ETHER_HDR_LEN;
     ether_input(ifp, eh, m);
+#endif /* NEW_NETWORK_STACK */
 
     m = uec_if_get_mbuf(self);
   } else {
@@ -198,7 +323,6 @@ static uint32_t uec_if_bd_wait(
   uint32_t ucce_flags
 )
 {
-  rtems_status_code sc = RTEMS_SUCCESSFUL;
   const quicc_ucf_context *ucf_context = &self->ucf_context;
   volatile quicc_ucf *ucf_regs = ucf_context->ucf_regs;
   uint32_t status = bd->status;
@@ -211,20 +335,12 @@ static uint32_t uec_if_bd_wait(
     done = (status & status_flags) == 0;
     if (!done) {
       rtems_interrupt_level level;
-      rtems_event_set events;
 
       rtems_interrupt_disable(level);
       ucf_regs->uccm |= ucce_flags;
       rtems_interrupt_enable(level);
 
-      sc = rtems_bsdnet_event_receive(
-        UEC_IF_EVENT_IRQ,
-        RTEMS_EVENT_ANY | RTEMS_WAIT,
-        RTEMS_NO_TIMEOUT,
-        &events
-      );
-      ASSERT_SC(sc);
-      assert(events == UEC_IF_EVENT_IRQ);
+      uec_if_wait_for_event(self, UEC_IF_EVENT_IRQ);
     }
   }
 
@@ -249,6 +365,8 @@ static void uec_if_rx_task(void *arg)
 {
   uec_if_context *self = arg;
   quicc_uec_context *uec_context = &self->uec_context;
+
+  uec_if_lock(self);
 
   quicc_bd_rx_process(
     &uec_context->rx_bd_context,
@@ -351,23 +469,16 @@ static void uec_if_bd_wait_and_free(void *arg, volatile quicc_bd *bd, void *bd_a
 
 static void uec_if_tx_task(void *arg)
 {
-  rtems_status_code sc = RTEMS_SUCCESSFUL;
   uec_if_context *self = arg;
-  struct ifnet *ifp = &self->arpcom.ac_if;
+  struct ifnet *ifp = uec_if_get_ifp(self);
   quicc_bd_tx_context *context = &self->uec_context.tx_bd_context;
+
+  uec_if_lock(self);
 
   while (true) {
     struct mbuf *m = NULL;
-    rtems_event_set events;
 
-    sc = rtems_bsdnet_event_receive(
-      UEC_IF_EVENT_TX_START,
-      RTEMS_EVENT_ANY | RTEMS_WAIT,
-      RTEMS_NO_TIMEOUT,
-      &events
-    );
-    ASSERT_SC(sc);
-    assert(events == UEC_IF_EVENT_TX_START);
+    uec_if_wait_for_event(self, UEC_IF_EVENT_TX_START);
 
     while ((m = uec_if_dequeue(ifp, m)) != NULL) {
       struct mbuf *current = m;
@@ -388,7 +499,11 @@ static void uec_if_tx_task(void *arg)
       );
     }
 
+#ifdef NEW_NETWORK_STACK
+    ifp->if_drv_flags &= ~IFF_DRV_OACTIVE;
+#else /* NEW_NETWORK_STACK */
     ifp->if_flags &= ~IFF_OACTIVE;
+#endif /* NEW_NETWORK_STACK */
   }
 }
 
@@ -460,10 +575,71 @@ static void uec_if_phy_init(uec_if_context *self)
   }
 }
 
+#ifdef NEW_NETWORK_STACK
+static void uec_if_interface_watchdog(void *arg)
+{
+  uec_if_context *self = arg;
+#else /* NEW_NETWORK_STACK */
+static void uec_if_interface_watchdog(struct ifnet *ifp)
+{
+  uec_if_context *self = ifp->if_softc;
+#endif /* NEW_NETWORK_STACK */
+  const quicc_uec_context *uec_context = &self->uec_context;
+  int phy_addr = self->uec_config.phy_address;
+
+  if (uec_if_is_phy_addr_valid(phy_addr)) {
+    uint16_t anlpar = quicc_uec_mii_read(uec_context, phy_addr, MII_ANLPAR);
+
+    if (self->anlpar != anlpar) {
+      quicc_direction dir = QUICC_DIR_RX_AND_TX;
+      quicc_uec_interface_type type = self->uec_config.interface_type;
+      quicc_uec_speed speed = QUICC_UEC_SPEED_10;
+      bool full_duplex = false;
+
+      self->anlpar = anlpar;
+
+      if ((anlpar & ANLPAR_TX_FD) != 0) {
+        full_duplex = true;
+        speed = QUICC_UEC_SPEED_100;
+      } else if ((anlpar & ANLPAR_T4) != 0) {
+        speed = QUICC_UEC_SPEED_100;
+      } else if ((anlpar & ANLPAR_TX) != 0) {
+        speed = QUICC_UEC_SPEED_100;
+      } else if ((anlpar & ANLPAR_10_FD) != 0) {
+        full_duplex = true;
+      }
+
+      quicc_uec_config_mode_enter(uec_context, dir);
+      quicc_uec_set_interface_mode(uec_context, type, speed, full_duplex);
+      quicc_uec_config_mode_leave(uec_context, dir);
+    }
+
+#ifdef NEW_NETWORK_STACK
+    callout_reset(
+      &self->watchdog_callout,
+      UEC_IF_WATCHDOG_TIMEOUT * hz,
+      uec_if_interface_watchdog,
+      self
+    );
+#else /* NEW_NETWORK_STACK */
+    ifp->if_timer = UEC_IF_WATCHDOG_TIMEOUT;
+#endif /* NEW_NETWORK_STACK */
+  }
+}
+
 static void uec_if_interface_init(void *arg)
 {
   uec_if_context *self = arg;
-  struct ifnet *ifp = &self->arpcom.ac_if;
+  struct ifnet *ifp = uec_if_get_ifp(self);
+
+  uec_if_lock(self);
+
+#ifdef NEW_NETWORK_STACK
+  if ((ifp->if_drv_flags & IFF_DRV_RUNNING) != 0) {
+    uec_if_unlock(self);
+    return;
+  }
+#endif /* NEW_NETWORK_STACK */
 
   uec_if_pin_config();
 
@@ -473,7 +649,7 @@ static void uec_if_interface_init(void *arg)
 
   uec_if_phy_init(self);
 
-  quicc_uec_set_mac_address(&self->uec_context, self->arpcom.ac_enaddr);
+  quicc_uec_set_mac_address(&self->uec_context, uec_if_get_mac_address(self));
   quicc_uec_mac_enable(&self->uec_context, QUICC_DIR_RX_AND_TX);
   quicc_ucf_enable(&self->ucf_context, QUICC_DIR_RX_AND_TX);
   quicc_uec_start(&self->uec_context, QUICC_DIR_RX_AND_TX);
@@ -496,8 +672,15 @@ static void uec_if_interface_init(void *arg)
 
   uec_if_interrupt_install(self);
 
+#ifdef NEW_NETWORK_STACK
+  callout_reset(&self->watchdog_callout, hz, uec_if_interface_watchdog, self);
+  ifp->if_drv_flags |= IFF_DRV_RUNNING;
+
+  uec_if_unlock(self);
+#else /* NEW_NETWORK_STACK */
   ifp->if_timer = 1;
   ifp->if_flags |= IFF_RUNNING;
+#endif /* NEW_NETWORK_STACK */
 }
 
 static int uec_if_mdio_read(
@@ -538,13 +721,14 @@ static int uec_if_mdio_write(
 
 static bool uec_if_media_status(uec_if_context *self, int *media)
 {
-  struct ifnet *ifp = &self->arpcom.ac_if;
+  struct ifnet *ifp = uec_if_get_ifp(self);
 
   *media = (int) IFM_MAKEWORD(0, 0, 0, self->uec_config.phy_address);
 
   return (*ifp->if_ioctl)(ifp, SIOCGIFMEDIA, (caddr_t) media) == 0;
 }
 
+#ifndef NEW_NETWORK_STACK
 static void uec_if_interface_stats(uec_if_context *self)
 {
   if (uec_if_is_phy_addr_valid(self->uec_config.phy_address)) {
@@ -590,7 +774,9 @@ static void uec_if_interface_stats(uec_if_context *self)
     self->stats.tx_compacts
   );
 }
+#endif /* NEW_NETWORK_STACK */
 
+#ifndef NEW_NETWORK_STACK
 static void uec_if_reset_multicast_filter(uec_if_context *self)
 {
   quicc_uec_context *uec_context = &self->uec_context;
@@ -676,6 +862,7 @@ static int uec_if_multicast_control(
 
   return eno;
 }
+#endif /* NEW_NETWORK_STACK */
 
 static void uec_if_enable_promiscous_mode(
   uec_if_context *self,
@@ -699,10 +886,15 @@ static int uec_if_interface_ioctl(
   ioctl_command_t cmd,
   caddr_t data
 ) {
+#ifndef NEW_NETWORK_STACK
   uec_if_context *self = ifp->if_softc;
   struct ifreq *ifr = (struct ifreq *) data;
+#endif /* NEW_NETWORK_STACK */
   int eno = 0;
 
+#ifdef NEW_NETWORK_STACK
+  eno = ether_ioctl(ifp, cmd, data);
+#else /* NEW_NETWORK_STACK */
   switch (cmd)  {
     case SIOCGIFMEDIA:
     case SIOCSIFMEDIA:
@@ -735,66 +927,85 @@ static int uec_if_interface_ioctl(
       eno = EINVAL;
       break;
   }
+#endif /* NEW_NETWORK_STACK */
 
   return eno;
 }
 
 static void uec_if_interface_start(struct ifnet *ifp)
 {
-  rtems_status_code sc = RTEMS_SUCCESSFUL;
   uec_if_context *self = ifp->if_softc;
+  quicc_bd_tx_context *context = &self->uec_context.tx_bd_context;
+  struct mbuf *m = NULL;
+  bool can_submit;
 
-  ifp->if_flags |= IFF_OACTIVE;
+  uec_if_lock(self);
 
-  sc = rtems_bsdnet_event_send(self->tx_task_id, UEC_IF_EVENT_TX_START);
-  ASSERT_SC(sc);
-}
+  while (
+    (can_submit = quicc_bd_tx_can_submit(context))
+      && (m = uec_if_dequeue(ifp, m)) != NULL
+  ) {
+    struct mbuf *current = m;
+    struct mbuf *next = current->m_next;
+    uint32_t status = QUICC_BD_LENGTH(current->m_len)
+      | QUICC_BD_I | (next != NULL ? 0 : QUICC_BD_L);
 
-static void uec_if_interface_watchdog(struct ifnet *ifp)
-{
-  uec_if_context *self = ifp->if_softc;
-  const quicc_uec_context *uec_context = &self->uec_context;
-  int phy_addr = self->uec_config.phy_address;
+    m = next;
 
-  if (uec_if_is_phy_addr_valid(phy_addr)) {
-    uint16_t anlpar = quicc_uec_mii_read(uec_context, phy_addr, MII_ANLPAR);
+    quicc_bd_tx_submit_and_wait(
+      context,
+      status,
+      mtod(current, void *),
+      current,
+      uec_if_bd_wait_and_free,
+      uec_if_bd_compact,
+      self
+    );
+  }
 
-    if (self->anlpar != anlpar) {
-      quicc_direction dir = QUICC_DIR_RX_AND_TX;
-      quicc_uec_interface_type type = self->uec_config.interface_type;
-      quicc_uec_speed speed = QUICC_UEC_SPEED_10;
-      bool full_duplex = false;
+  uec_if_unlock(self);
 
-      self->anlpar = anlpar;
+  if (!can_submit) {
+#ifdef NEW_NETWORK_STACK
+    ifp->if_drv_flags |= IFF_DRV_OACTIVE;
+#else /* NEW_NETWORK_STACK */
+    ifp->if_flags |= IFF_OACTIVE;
+#endif /* NEW_NETWORK_STACK */
 
-      if ((anlpar & ANLPAR_TX_FD) != 0) {
-        full_duplex = true;
-        speed = QUICC_UEC_SPEED_100;
-      } else if ((anlpar & ANLPAR_T4) != 0) {
-        speed = QUICC_UEC_SPEED_100;
-      } else if ((anlpar & ANLPAR_TX) != 0) {
-        speed = QUICC_UEC_SPEED_100;
-      } else if ((anlpar & ANLPAR_10_FD) != 0) {
-        full_duplex = true;
-      }
-
-      quicc_uec_config_mode_enter(uec_context, dir);
-      quicc_uec_set_interface_mode(uec_context, type, speed, full_duplex);
-      quicc_uec_config_mode_leave(uec_context, dir);
-    }
-
-    ifp->if_timer = UEC_IF_WATCHDOG_TIMEOUT;
+    uec_if_send_event(self->tx_task_id, UEC_IF_EVENT_TX_START);
   }
 }
 
 static uec_if_context uec_if_context_instance;
 
+static const uint8_t eaddr[ETHER_ADDR_LEN] =
+  { 0x0e, 0xb0, 0xba, 0x5e, 0xba, 0x12 };
+
+#ifdef NEW_NETWORK_STACK
+static int uec_if_attach(device_t dev)
+#else /* NEW_NETWORK_STACK */
 static void uec_if_attach(struct rtems_bsdnet_ifconfig *config)
+#endif /* NEW_NETWORK_STACK */
 {
-  uec_if_context *self = &uec_if_context_instance;
-  struct ifnet *ifp = &self->arpcom.ac_if;
+  uec_if_context *self;
+  struct ifnet *ifp;
+  int rx_bd_count = 32;
+  int tx_bd_count = 32;
+
+#ifdef NEW_NETWORK_STACK
+  self = device_get_softc(dev);
+
+  self->ifp = ifp = if_alloc(IFT_ETHER);
+  assert(ifp != NULL);
+
+  mtx_init(&self->mtx, device_get_nameunit(dev), MTX_NETWORK_LOCK, MTX_DEF);
+  callout_init_mtx(&self->watchdog_callout, &self->mtx, 0);
+#else /* NEW_NETWORK_STACK */
   char *unit_name = NULL;
-  int unit_number = rtems_bsdnet_parse_driver_name(config, &unit_name);
+  int unit = rtems_bsdnet_parse_driver_name(config, &unit_name);
+
+  self = &uec_if_context_instance;
+  ifp = &self->arpcom.ac_if;
 
   /* Interrupt number */
   config->irno = 0;
@@ -803,14 +1014,15 @@ static void uec_if_attach(struct rtems_bsdnet_ifconfig *config)
   config->drv_ctrl = NULL;
 
   /* Receive unit number */
-  if (config->rbuf_count < 32) {
-    config->rbuf_count = 32;
+  if (config->rbuf_count > 32) {
+    rx_bd_count = config->rbuf_count;
   }
 
   /* Transmit unit number */
-  if (config->xbuf_count < 32) {
-    config->xbuf_count = 32;
+  if (config->xbuf_count > 32) {
+    tx_bd_count = config->xbuf_count;
   }
+#endif /* NEW_NETWORK_STACK */
 
   /* UCF config */
   self->ucf_config.index = 0;
@@ -823,38 +1035,95 @@ static void uec_if_attach(struct rtems_bsdnet_ifconfig *config)
   self->uec_config.interface_type = QUICC_UEC_INTERFACE_TYPE_MII;
   self->uec_config.rx_thread_count = QUICC_UEC_THREAD_COUNT_1;
   self->uec_config.tx_thread_count = QUICC_UEC_THREAD_COUNT_1;
-  self->uec_config.rx_bd_count = (size_t) config->rbuf_count;
-  self->uec_config.tx_bd_count = (size_t) config->xbuf_count;
+  self->uec_config.rx_bd_count = (size_t) rx_bd_count;
+  self->uec_config.tx_bd_count = (size_t) tx_bd_count;
   self->uec_config.max_rx_buf_len = MCLBYTES;
   self->uec_config.bd_arg = self;
   self->uec_config.fill_rx_bd = uec_if_bd_rx_fill;
   self->uec_config.phy_address = MPC83XX_NETWORK_INTERFACE_0_PHY_ADDR;
 
+#ifndef NEW_NETWORK_STACK
   /* Copy MAC address */
   memcpy(self->arpcom.ac_enaddr, config->hardware_address, ETHER_ADDR_LEN);
+#endif /* NEW_NETWORK_STACK */
 
   /* Set interface data */
   ifp->if_softc = self;
-  ifp->if_unit = (short) unit_number;
+#ifdef NEW_NETWORK_STACK
+  if_initname(ifp, device_get_name(dev), device_get_unit(dev));
+  IFQ_SET_MAXLEN(&ifp->if_snd, tx_bd_count - 1);
+  ifp->if_snd.ifq_drv_maxlen = tx_bd_count - 1;
+  IFQ_SET_READY(&ifp->if_snd);
+  ifp->if_data.ifi_hdrlen = sizeof(struct ether_header);
+#else /* NEW_NETWORK_STACK */
+  ifp->if_unit = (short) unit;
   ifp->if_name = unit_name;
   ifp->if_mtu = config->mtu > 0 ? (u_long) config->mtu : ETHERMTU;
+  ifp->if_output = ether_output;
+  ifp->if_watchdog = uec_if_interface_watchdog;
+  ifp->if_timer = 0;
+  ifp->if_snd.ifq_maxlen = ifqmaxlen;
+#endif /* NEW_NETWORK_STACK */
   ifp->if_init = uec_if_interface_init;
   ifp->if_ioctl = uec_if_interface_ioctl;
   ifp->if_start = uec_if_interface_start;
-  ifp->if_output = ether_output;
-  ifp->if_watchdog = uec_if_interface_watchdog;
   ifp->if_flags = IFF_MULTICAST | IFF_BROADCAST | IFF_SIMPLEX;
-  ifp->if_snd.ifq_maxlen = ifqmaxlen;
-  ifp->if_timer = 0;
 
   /* MDIO */
   self->mdio.mdio_r = uec_if_mdio_read;
   self->mdio.mdio_w = uec_if_mdio_write;
 
   /* Attach the interface */
+#ifdef NEW_NETWORK_STACK
+  ether_ifattach(ifp, &eaddr[0]);
+
+  return 0;
+#else /* NEW_NETWORK_STACK */
   if_attach(ifp);
   ether_ifattach(ifp);
+#endif /* NEW_NETWORK_STACK */
 }
+
+#ifdef NEW_NETWORK_STACK
+
+static int uec_if_probe(device_t dev)
+{
+  int unit = device_get_unit(dev);
+  int error;
+
+  if (unit == 0) {
+    error = BUS_PROBE_DEFAULT;
+  } else {
+    error = ENXIO;
+  }
+
+  return error;
+}
+
+static device_method_t qe_methods[] = {
+  /* Device interface */
+  DEVMETHOD(device_probe, uec_if_probe),
+  DEVMETHOD(device_attach, uec_if_attach),
+
+  DEVMETHOD_END
+};
+
+static driver_t qe_nexus_driver = {
+  "qe",
+  qe_methods,
+  sizeof(uec_if_context),
+  NULL,
+  0,
+  NULL
+};
+
+static devclass_t qe_devclass;
+
+DRIVER_MODULE(qe, nexus, qe_nexus_driver, qe_devclass, 0, 0);
+MODULE_DEPEND(qe, nexus, 1, 1, 1);
+MODULE_DEPEND(qe, ether, 1, 1, 1);
+
+#else /* NEW_NETWORK_STACK */
 
 /* FIXME */
 #define quicc_uec_attach_detach BSP_tsec_attach
@@ -872,3 +1141,5 @@ int quicc_uec_attach_detach(
   /* FIXME: Return value */
   return 0;
 }
+
+#endif /* NEW_NETWORK_STACK */

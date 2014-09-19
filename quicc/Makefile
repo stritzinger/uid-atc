@@ -2,6 +2,11 @@ RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/br_uid
 
 include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
 
+# CPPFLAGS += -DNEW_NETWORK_STACK
+# LIBS = -lbsd
+
+LIBS = -ldemo -lftpd -ltelnetd
+
 IMAGE = /tftpboot/app.img
 
 LIB = $(BUILDDIR)/libquicc
@@ -36,7 +41,7 @@ $(LIB).a: $(LIB_OBJS)
 	$(RANLIB) $@
 
 $(APP).exe: $(APP_OBJS) $(LIB).a
-	$(CCLINK) -Wl,--start-group $^ -ldemo -lftpd -ltelnetd -Wl,--end-group -o $@
+	$(CCLINK) -Wl,--start-group $^ $(LIBS) -Wl,--end-group -o $@
 
 $(TEST).exe: $(TEST_OBJS) $(LIB).a
 	$(CXXLINK) $^ -lgtest -o $@
