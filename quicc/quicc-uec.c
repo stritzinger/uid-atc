@@ -271,12 +271,8 @@ static void init_mii(quicc_uec_context *self, quicc_ucf_context *ucf_context, co
 static void init_bd(quicc_uec_context *self, quicc_ucf_context *ucf_context, const quicc_uec_config *uec_config)
 {
 	volatile quicc_ucf *ucf_regs = ucf_context->ucf_regs;
-	quicc_bd *bd = NULL;
 	size_t rx_bd_count = uec_config->rx_bd_count;
-	size_t rx_bd_size = rx_bd_count * sizeof(*bd);
 	size_t tx_bd_count = uec_config->tx_bd_count;
-	void **per_bd_arg_begin = NULL;
-	size_t i = 0;
 
 	assert(rx_bd_count >= 8);
 	assert(rx_bd_count % 4 == 0);
