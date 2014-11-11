@@ -23,6 +23,7 @@ APP_PIECES =                    \
   mio_init                      \
   mio_cmd_raw                   \
   mio_cmd_input                 \
+  mio_cmd_irq                   \
   trf7970A_cmd_agc_off          \
   trf7970A_cmd_agc_on           \
   trf7970A_cmd_am               \

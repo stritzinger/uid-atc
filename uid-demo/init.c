@@ -79,7 +79,7 @@ static void Init(rtems_task_argument arg)
   rtems_device_major_number id_major_led = 0;
   rtems_device_major_number id_major_ncv = 0;
 
-  printf( "\nuid-demo Version 0.10\n" );
+  printf( "\nuid-demo Version 0.11\n" );
 
   sc = bsp_register_i2c();
   assert( sc == RTEMS_SUCCESSFUL );
@@ -168,6 +168,18 @@ static void Init(rtems_task_argument arg)
     cmd = rtems_shell_add_cmd_struct(&mio_cmd_input);
     assert( cmd == &mio_cmd_input );
     if( cmd != &mio_cmd_input ) {
+      eno = EFAULT;
+    }
+  }
+#endif /* USE_MULTIIO */
+#ifdef USE_MULTIIO
+  if( eno == 0 ) {
+    eno = mio_irq_init();
+  }
+  if( eno == 0 ) {
+    cmd = rtems_shell_add_cmd_struct(&mio_cmd_irq);
+    assert( cmd == &mio_cmd_irq );
+    if( cmd != &mio_cmd_irq ) {
       eno = EFAULT;
     }
   }
@@ -355,6 +367,9 @@ static void Init(rtems_task_argument arg)
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 
 #define CONFIGURE_STACK_CHECKER_ENABLED
+
+#define CONFIGURE_UNIFIED_WORK_AREAS
+#define CONFIGURE_UNLIMITED_OBJECTS
 
 #define CONFIGURE_INIT
 

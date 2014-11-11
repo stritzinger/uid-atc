@@ -39,6 +39,8 @@ int mio_init(
 
 extern rtems_shell_cmd_t mio_cmd_raw;
 extern rtems_shell_cmd_t mio_cmd_input;
+extern rtems_shell_cmd_t mio_cmd_irq;
+int mio_irq_init( void );
 
 #ifdef __cplusplus
 }
