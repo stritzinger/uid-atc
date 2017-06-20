@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014 embedded brains GmbH.  All rights reserved.
+ * Copyright (c) 2013, 2017 embedded brains GmbH.  All rights reserved.
  *
  *  embedded brains GmbH
  *  Dornierstr. 4
@@ -29,17 +29,21 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <sys/stat.h>
 #include <assert.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <string.h>
+#include <sysexits.h>
 
 #include <rtems.h>
 #include <rtems/shell.h>
 #include <rtems/console.h>
 #include <rtems/malloc.h>
-#include <rtems/rtems_bsdnet.h>
+#include <rtems/bsd/bsd.h>
+
+#include <machine/rtems-bsd-commands.h>
 
 #include <bsp.h>
 
@@ -49,7 +53,11 @@
 
 #include <quicc/quicc.h>
 
-static char mac_address [6] = NETWORK_MAC_ADDRESS;
+RTEMS_BSD_DEFINE_NEXUS_DEVICE(qe, 0, 0, NULL);
+
+SYSINIT_DRIVER_REFERENCE(qe, nexus);
+
+static char mac_address[6] = NETWORK_MAC_ADDRESS;
 
 static char ip_self[16] = NETWORK_IP_SELF;
 
@@ -57,42 +65,17 @@ static char ip_netmask[16] = NETWORK_IP_NETMASK;
 
 static char ip_gateway[16] = NETWORK_IP_GATEWAY;
 
-static struct rtems_bsdnet_ifconfig ifconfig = {
-	.name = RTEMS_BSP_NETWORK_DRIVER_NAME,
-	.attach = RTEMS_BSP_NETWORK_DRIVER_ATTACH,
-	.next = NULL,
-	.ip_address = &ip_self[0],
-	.ip_netmask = &ip_netmask[0],
-	.hardware_address = &mac_address[0],
-	.ignore_broadcast = 0,
-	.mtu = 0,
-	.rbuf_count = 0,
-	.xbuf_count = 0,
-	.port = 0,
-	.irno = 0,
-	.bpar = 0
-};
+void
+rtems_bsd_get_mac_address(const char *name, int unit, uint8_t mac_addr[6])
+{
 
-struct rtems_bsdnet_config rtems_bsdnet_config = {
-	.ifconfig = &ifconfig,
-	.bootp = NULL,
-	.network_task_priority = 80,
-	.mbuf_bytecount = 0,
-	.mbuf_cluster_bytecount = 0,
-	.hostname = NULL,
-	.domainname = NULL,
-	.gateway = &ip_gateway[0],
-	.log_host = &ip_gateway[0],
-	.name_server = { &ip_gateway[0], NULL, NULL },
-	.ntp_server = { &ip_gateway[0], NULL, NULL },
-	.sb_efficiency = 0,
-	.udp_tx_buf_size = 0,
-	.udp_rx_buf_size = 0,
-	.tcp_tx_buf_size = 0,
-	.tcp_rx_buf_size = 0
-};
+	assert(strcmp(name, "qe") == 0);
+	assert(unit == 0);
+	memcpy(mac_addr, mac_address, sizeof(mac_address));
+}
 
-static int ini_value_copy(void *dst, size_t dst_size, const char *value)
+static int
+ini_value_copy(void *dst, size_t dst_size, const char *value)
 {
 	int ok = 1;
 	size_t value_size = strlen(value) + 1;
@@ -106,9 +89,13 @@ static int ini_value_copy(void *dst, size_t dst_size, const char *value)
 	return ok;
 }
 
-static int ini_file_handler(void *arg, const char *section, const char *name, const char *value)
+static int
+ini_file_handler(void *arg, const char *section, const char *name,
+    const char *value)
 {
 	int ok = 0;
+
+	(void)arg;
 
 	if (strcmp(section, "network") == 0) {
 		if (strcmp(name, "mac_address") == 0) {
@@ -137,12 +124,94 @@ static int ini_file_handler(void *arg, const char *section, const char *name, co
 	return ok;
 }
 
-void uid_init_network(const char *ini_file)
+static void
+default_network_ifconfig_lo0(void)
 {
+	int exit_code;
+	char *lo0[] = {
+	    "ifconfig",
+	    "lo0",
+	    "inet",
+	    "127.0.0.1",
+	    "netmask",
+	    "255.255.255.0",
+	    NULL };
+	char *lo0_inet6[] = {
+	    "ifconfig",
+	    "lo0",
+	    "inet6",
+	    "::1",
+	    "prefixlen",
+	    "128",
+	    NULL };
+
+	exit_code = rtems_bsd_command_ifconfig(RTEMS_BSD_ARGC(lo0), lo0);
+	assert(exit_code == EX_OK);
+
+	exit_code = rtems_bsd_command_ifconfig(RTEMS_BSD_ARGC(lo0_inet6),
+	    lo0_inet6);
+	assert(exit_code == EX_OK);
+}
+
+static void
+default_network_ifconfig_hwif0(char *ifname)
+{
+	int exit_code;
+	char *ifcfg[] = {
+	    "ifconfig",
+	    ifname,
+	    "inet",
+	    ip_self,
+	    "netmask",
+	    ip_netmask,
+	    NULL };
+
+	exit_code = rtems_bsd_command_ifconfig(RTEMS_BSD_ARGC(ifcfg), ifcfg);
+	assert(exit_code == EX_OK);
+}
+
+static void
+default_network_route_hwif0(char *ifname)
+{
+	int exit_code;
+	char *dflt_route[] = {
+	    "route",
+	    "add",
+	    "-host",
+	    ip_gateway,
+	    "-iface",
+	    ifname,
+	    NULL };
+	char *dflt_route2[] = {
+	    "route",
+	    "add",
+	    "default",
+	    ip_gateway,
+	    NULL };
+
+	exit_code = rtems_bsd_command_route(RTEMS_BSD_ARGC(dflt_route),
+	    dflt_route);
+	assert(exit_code == EXIT_SUCCESS);
+
+	exit_code = rtems_bsd_command_route(RTEMS_BSD_ARGC(dflt_route2),
+	    dflt_route2);
+	assert(exit_code == EXIT_SUCCESS);
+}
+
+void
+uid_init_network(const char *ini_file)
+{
+	char *ifname = "qe0";
+	rtems_status_code sc;
+
 	ini_parse(ini_file, ini_file_handler, NULL);
 
 	quicc_reset(quicc_init());
 
-	int rv = rtems_bsdnet_initialize_network();
-	assert(rv == 0);
+	sc = rtems_bsd_initialize();
+	assert(sc == RTEMS_SUCCESSFUL);
+
+	default_network_ifconfig_lo0();
+	default_network_ifconfig_hwif0(ifname);
+	default_network_route_hwif0(ifname);
 }

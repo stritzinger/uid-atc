@@ -39,8 +39,6 @@
 
 #include <rtems.h>
 
-#ifdef RTEMS_NETWORKING
-
 #include <rtems/ftpd.h>
 
 #include "demo.h"
@@ -84,5 +82,3 @@ rtems_status_code demo_initialize_ftpd(rtems_task_priority priority)
 
   return RTEMS_SUCCESSFUL;
 }
-
-#endif /* RTEMS_NETWORKING */

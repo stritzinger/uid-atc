@@ -39,8 +39,6 @@
 
 #include <rtems.h>
 
-#ifdef RTEMS_NETWORKING
-
 #include <rtems/ftpfs.h>
 
 #include "demo.h"
@@ -74,5 +72,3 @@ rtems_status_code demo_initialize_ftpfs(bool verbose, time_t timeout_seconds)
 
   return RTEMS_SUCCESSFUL;
 }
-
-#endif /* RTEMS_NETWORKING */

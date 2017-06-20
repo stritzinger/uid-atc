@@ -36,6 +36,7 @@
 #include <termios.h>
 
 #include <rtems.h>
+#include <rtems/bspIo.h>
 #include <rtems/shell.h>
 
 #include <local/demo.h>
@@ -73,8 +74,7 @@ static void Init(rtems_task_argument arg)
 #define CONFIGURE_APPLICATION_NEEDS_ZERO_DRIVER
 
 #define CONFIGURE_MAXIMUM_DRIVERS 32
-
-#define CONFIGURE_USE_IMFS_AS_BASE_FILESYSTEM
+#define CONFIGURE_MAXIMUM_USER_EXTENSIONS 1
 
 #define CONFIGURE_FILESYSTEM_IMFS
 #define CONFIGURE_FILESYSTEM_FTPFS

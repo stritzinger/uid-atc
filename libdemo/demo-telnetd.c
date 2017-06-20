@@ -41,8 +41,6 @@
 
 #include <rtems.h>
 
-#ifdef RTEMS_NETWORKING
-
 #include <rtems/shell.h>
 #include <rtems/telnetd.h>
 
@@ -74,5 +72,3 @@ rtems_status_code demo_initialize_telnetd(rtems_task_priority priority, size_t s
 
   return rtems_telnetd_initialize() ? RTEMS_IO_ERROR : RTEMS_SUCCESSFUL; 
 }
-
-#endif /* RTEMS_NETWORKING */
