@@ -1,0 +1,3 @@
+[submodule "libyaffs2"]
+	path = libyaffs2
+	url = git://git.rtems.org/sebh/rtems-yaffs2.git
