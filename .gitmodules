@@ -7,3 +7,6 @@
 [submodule "libbed"]
 	path = libbed
 	url = zbfxigop@ftp.rtems.eu:libbed.git
+[submodule "libbsd"]
+	path = libbsd
+	url = git://git.rtems.org/rtems-libbsd.git
