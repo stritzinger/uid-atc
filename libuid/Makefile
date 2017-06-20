@@ -1,6 +1,7 @@
-RTEMS_MAKEFILE_PATH = /opt/rtems-4.11/powerpc-rtems4.11/br_uid
+RTEMS_ROOT = /opt/rtems-4.12
+RTEMS_BSP = br_uid
 
-include $(RTEMS_MAKEFILE_PATH)/make/bsp.mk
+include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).mk
 
 LIB = $(BUILDDIR)/libuid.a
 LIB_PIECES =
