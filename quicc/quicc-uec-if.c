@@ -38,6 +38,8 @@
 #include <net/if_types.h>
 #include <net/if_var.h>
 
+#include <rtems/bsd/bsd.h>
+
 #else /* NEW_NETWORK_STACK */
 
 #define __INSIDE_RTEMS_BSD_TCPIP_STACK__ 1
@@ -169,6 +171,11 @@ static struct ifnet *uec_if_get_ifp(uec_if_context *self)
 static const uint8_t *uec_if_get_mac_address(uec_if_context *self)
 {
 #ifdef NEW_NETWORK_STACK
+  rtems_bsd_get_mac_address(
+    device_get_name(self->dev),
+    device_get_unit(self->dev),
+    (uint8_t *) IF_LLADDR(self->ifp)
+  );
   return (const uint8_t *) IF_LLADDR(self->ifp);
 #else /* NEW_NETWORK_STACK */
   return (const uint8_t *) self->arpcom.ac_enaddr;
@@ -1187,6 +1194,7 @@ static void uec_if_attach(struct rtems_bsdnet_ifconfig *config)
 #ifdef NEW_NETWORK_STACK
   self = device_get_softc(dev);
 
+  self->dev = dev;
   self->ifp = ifp = if_alloc(IFT_ETHER);
   assert(ifp != NULL);
 
