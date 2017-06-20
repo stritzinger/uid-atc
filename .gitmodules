@@ -1,3 +1,6 @@
 [submodule "libyaffs2"]
 	path = libyaffs2
 	url = git://git.rtems.org/sebh/rtems-yaffs2.git
+[submodule "rtems-source-builder"]
+	path = rtems-source-builder
+	url = git://git.rtems.org/rtems-source-builder.git
