@@ -48,6 +48,9 @@
 #include <rtems/ftpd.h>
 #include <rtems/bsd/bsd.h>
 
+RTEMS_BSD_DEFINE_NEXUS_DEVICE(qe, 0, 0, NULL);
+SYSINIT_DRIVER_REFERENCE(qe, nexus);
+
 static void
 default_network_ifconfig_lo0(void)
 {

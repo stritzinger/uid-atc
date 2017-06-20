@@ -18,8 +18,8 @@
 
 #include <assert.h>
 
-#include <rtems/bsd/sys/param.h>
-#include <rtems/bsd/sys/types.h>
+#include <sys/param.h>
+#include <sys/types.h>
 #include <sys/mbuf.h>
 #include <sys/malloc.h>
 #include <sys/kernel.h>
@@ -253,9 +253,9 @@ static void uec_if_interrupt_install(uec_if_context *self)
 static struct mbuf *uec_if_get_mbuf(uec_if_context *self)
 {
   struct ifnet *ifp = uec_if_get_ifp(self);
-  struct mbuf *m = m_gethdr(M_WAIT, MT_DATA);
+  struct mbuf *m = m_gethdr(M_WAITOK, MT_DATA);
 
-  MCLGET(m, M_WAIT);
+  MCLGET(m, M_WAITOK);
   m->m_pkthdr.rcvif = ifp;
 
   return m;
@@ -412,6 +412,7 @@ static struct mbuf *uec_if_dequeue(struct ifnet *ifp, struct mbuf *m)
   }
   m->m_next = n;
 
+  if_inc_counter(ifp, IFCOUNTER_OPACKETS, 1);
   return m;
 }
 
@@ -556,11 +557,11 @@ static void uec_if_pin_config(void)
     phy_reset_gpio->gpdat &= ~phy_reset_bit;
     phy_reset_gpio->gpdir |= phy_reset_bit;
 
-    rtems_task_wake_after(10);
+    rtems_task_wake_after(RTEMS_MILLISECONDS_TO_TICKS(10));
 
     phy_reset_gpio->gpdat |= phy_reset_bit;
 
-    rtems_task_wake_after(10);
+    rtems_task_wake_after(RTEMS_MILLISECONDS_TO_TICKS(100));
 
     /* Set FEC1 pin function for FEC1 block */
     syscon->sicrl = BSP_BFLD32SET(syscon->sicrl, 0x0, 28, 29);
@@ -605,6 +606,8 @@ static rtems_status_code ksz8864rmn_spi_rw(
   };
   uint8_t read[sizeof(write) / sizeof(write[0])];
   int bytes_received = 0;
+
+  (void)uec_context;
 
   ksz8864rmn_chip_select();
   bytes_received = mpc83xx_spi_read_write_bytes(
@@ -1163,7 +1166,9 @@ static void uec_if_interface_start(struct ifnet *ifp)
   }
 }
 
+#ifndef NEW_NETWORK_STACK
 static uec_if_context uec_if_context_instance;
+#endif
 
 static const uint8_t eaddr[ETHER_ADDR_LEN] =
   { 0x0e, 0xb0, 0xba, 0x5e, 0xba, 0x12 };
@@ -1241,7 +1246,6 @@ static void uec_if_attach(struct rtems_bsdnet_ifconfig *config)
   IFQ_SET_MAXLEN(&ifp->if_snd, tx_bd_count - 1);
   ifp->if_snd.ifq_drv_maxlen = tx_bd_count - 1;
   IFQ_SET_READY(&ifp->if_snd);
-  ifp->if_data.ifi_hdrlen = sizeof(struct ether_header);
 #else /* NEW_NETWORK_STACK */
   ifp->if_unit = (short) unit;
   ifp->if_name = unit_name;

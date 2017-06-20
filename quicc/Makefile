@@ -3,10 +3,8 @@ RTEMS_BSP = br_uid
 
 include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).mk
 
-# CPPFLAGS += -DNEW_NETWORK_STACK
-# LIBS = -lbsd
-
-LIBS = -ldemo -lftpd -ltelnetd
+CPPFLAGS += -DNEW_NETWORK_STACK -DMPC83XX_BOARD_BR_UID
+LIBS = -lbsd -lm
 
 IMAGE = /tftpboot/app.img
 
