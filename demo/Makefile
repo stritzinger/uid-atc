@@ -1,4 +1,4 @@
-RTEMS_ROOT = /opt/rtems-4.12
+RTEMS_ROOT = $(PWD)/../rtems-4.12
 RTEMS_BSP = br_uid
 
 include $(RTEMS_ROOT)/make/custom/$(RTEMS_BSP).mk
