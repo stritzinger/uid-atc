@@ -40,16 +40,16 @@ $(BUILDDIR)/%.o: %.cpp
 $(BUILDDIR)/%.o: %.s
 	$(AS) $(ASFLAGS) $< -o $@
 
-AR = $(RTEMS_CPU)-rtems4.12-ar
-AS = $(RTEMS_CPU)-rtems4.12-as
-CC = $(RTEMS_CPU)-rtems4.12-gcc --pipe
-CXX = $(RTEMS_CPU)-rtems4.12-g++
-LD = $(RTEMS_CPU)-rtems4.12-ld
-NM = $(RTEMS_CPU)-rtems4.12-nm
-OBJCOPY = $(RTEMS_CPU)-rtems4.12-objcopy
-RANLIB = $(RTEMS_CPU)-rtems4.12-ranlib
-SIZE = $(RTEMS_CPU)-rtems4.12-size
-STRIP = $(RTEMS_CPU)-rtems4.12-strip
+AR = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-ar
+AS = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-as
+CC = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-gcc --pipe
+CXX = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-g++
+LD = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-ld
+NM = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-nm
+OBJCOPY = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-objcopy
+RANLIB = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-ranlib
+SIZE = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-size
+STRIP = $(RTEMS_ROOT)/bin/$(RTEMS_CPU)-rtems4.12-strip
 export AR
 export AS
 export CC
