@@ -184,27 +184,12 @@ static void Init(rtems_task_argument arg)
 
 #define CONFIGURE_APPLICATION_NEEDS_LIBBLOCK
 
-#define CONFIGURE_USE_IMFS_AS_BASE_FILESYSTEM
-
 /* increase max file size in IMFS to 64MB */
 #define CONFIGURE_IMFS_MEMFILE_BYTES_PER_BLOCK 256 
 
-#define CONFIGURE_FILESYSTEM_IMFS
 #define CONFIGURE_FILESYSTEM_NFS
 
 #define CONFIGURE_LIBIO_MAXIMUM_FILE_DESCRIPTORS 64
-
-#define CONFIGURE_MAXIMUM_TASKS 32
-#define CONFIGURE_MAXIMUM_DRIVERS 8
-#define CONFIGURE_MAXIMUM_SEMAPHORES 32
-#define CONFIGURE_MAXIMUM_MESSAGE_QUEUES 4
-#define CONFIGURE_MAXIMUM_TIMERS 4
-#define CONFIGURE_MAXIMUM_PERIODS 4
-
-#define CONFIGURE_MAXIMUM_POSIX_THREADS 4
-#define CONFIGURE_MAXIMUM_POSIX_MUTEXES 16
-
-#define CONFIGURE_EXTRA_TASK_STACKS (512 * 1024)
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 
@@ -215,14 +200,10 @@ static void Init(rtems_task_argument arg)
 #define CONFIGURE_UNIFIED_WORK_AREAS
 #define CONFIGURE_UNLIMITED_OJEBCTS
 #define CONFIGURE_UNLIMITED_ALLOCATION_SIZE 8
-#define CONFIGURE_MAXIMUM_POSIX_KEYS      16
 
 #define CONFIGURE_BDBUF_BUFFER_MAX_SIZE (16 * 1024)
 #define CONFIGURE_BDBUF_MAX_READ_AHEAD_BLOCKS 4
 #define CONFIGURE_BDBUF_CACHE_MEMORY_SIZE (1 * 1024 * 1024)
-
-#define CONFIGURE_PIPES_ENABLED
-#define CONFIGURE_MAXIMUM_PIPES 16
 
 #define CONFIGURE_INIT
 
@@ -230,9 +211,23 @@ static void Init(rtems_task_argument arg)
 
 #include <rtems/confdefs.h>
 
+#include <bsp/irq-info.h>
+#include <rtems/netcmds-config.h>
+
 #define CONFIGURE_SHELL_COMMANDS_INIT
 #define CONFIGURE_SHELL_COMMANDS_ALL
-#define CONFIGURE_SHELL_COMMANDS_ALL_NETWORKING
+
+#define CONFIGURE_SHELL_USER_COMMANDS \
+  &bsp_interrupt_shell_command, \
+  &rtems_shell_ARP_Command, \
+  &rtems_shell_HOSTNAME_Command, \
+  &rtems_shell_PING_Command, \
+  &rtems_shell_ROUTE_Command, \
+  &rtems_shell_NETSTAT_Command, \
+  &rtems_shell_IFCONFIG_Command, \
+  &rtems_shell_TCPDUMP_Command, \
+  &rtems_shell_SYSCTL_Command, \
+  &rtems_shell_VMSTAT_Command
 
 #include <rtems/shellconfig.h>
 
