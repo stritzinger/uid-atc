@@ -13,3 +13,6 @@
 [submodule "rtems"]
 	path = rtems
 	url = https://github.com/grisp/rtems
+[submodule "libinih/inih"]
+	path = libinih/inih
+	url = https://github.com/grisp/inih

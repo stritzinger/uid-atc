@@ -1,8 +1,8 @@
 PREFIX = $(PWD)/rtems-4.12
 
-.PHONY: libbsd libyaffs2 libini libdemo libbed quicc libuid
+.PHONY: libbsd libyaffs2 libinih libdemo libbed quicc libuid
 
-all: git rsb bsp libbsd libyaffs2 libini libdemo libbed quicc libuid
+all: git rsb bsp libbsd libyaffs2 libinih libdemo libbed quicc libuid
 
 git:
 	git submodule update --init
@@ -26,7 +26,7 @@ $(PREFIX)/make/custom/br_uid.mk: build/br_uid.mk
 libyaffs2:
 	PATH="$(PREFIX)/bin:$$PATH" RTEMS_MAKEFILE_PATH=$(PREFIX)/powerpc-rtems4.12/br_uid make clean install -f Makefile.rtems -C libyaffs2
 
-libini: $(PREFIX)/make/custom/br_uid.mk
+libinih: $(PREFIX)/make/custom/br_uid.mk
 	PATH="$(PREFIX)/bin:$$PATH" make clean install -C $@ RTEMS_ROOT=$(PREFIX)
 
 libdemo: $(PREFIX)/make/custom/br_uid.mk

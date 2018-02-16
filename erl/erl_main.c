@@ -40,7 +40,7 @@
 
 #include <local/demo.h>
 
-#include <ini/ini.h>
+#include <inih/ini.h>
 #include <uid/uid.h>
 
 static char hostname[256] = "defaulthost";

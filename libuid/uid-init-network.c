@@ -49,7 +49,7 @@
 
 #include <local/network-config.h>
 
-#include <ini/ini.h>
+#include <inih/ini.h>
 
 #include <quicc/quicc.h>
 

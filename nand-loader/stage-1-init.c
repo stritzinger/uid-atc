@@ -47,7 +47,7 @@
 #include <rtems/rtems_bsdnet.h>
 #include <rtems/stringto.h>
 
-#include <ini/ini.h>
+#include <inih/ini.h>
 
 #include <local/demo.h>
 #include <local/test.h>
