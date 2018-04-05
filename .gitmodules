@@ -6,7 +6,7 @@
 	url = git://git.rtems.org/rtems-source-builder.git
 [submodule "libbed"]
 	path = libbed
-	url = zbfxigop@ftp.rtems.eu:libbed.git
+	url = git@github.com:stritzinger/libbed.git
 [submodule "libbsd"]
 	path = libbsd
 	url = https://github.com/grisp/rtems-libbsd
