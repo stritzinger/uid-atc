@@ -3,7 +3,7 @@
 	url = git://git.rtems.org/sebh/rtems-yaffs2.git
 [submodule "rtems-source-builder"]
 	path = rtems-source-builder
-	url = git://git.rtems.org/rtems-source-builder.git
+	url = git@github.com:stritzinger/rtems-source-builder.git
 [submodule "libbed"]
 	path = libbed
 	url = git@github.com:stritzinger/libbed.git
