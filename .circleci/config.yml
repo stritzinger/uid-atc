@@ -24,7 +24,7 @@ jobs:
           - persist_to_workspace:
               root: /opt
               paths:
-                - grisp/*/*/*/rtems-install
+                - grisp/*/*/*/rtems-4.12
     deploy:
         docker:
           - image: 'opensuse:leap'
@@ -36,8 +36,8 @@ jobs:
               command: "GRISP_TOOLCHAIN_REVISION=$(cat /opt/grisp/*/*/*/rtems-4.12/GRISP_TOOLCHAIN_REVISION) &&
               tar -czf /tmp/grisp_toolchain_powerpc-rtems4_Linux_$GRISP_TOOLCHAIN_REVISION.tar.gz ."
               working_directory: /opt
-#          - deploy:
-#              command: aws s3 cp /tmp/grisp_toolchain_*.tar.gz s3://grisp/platforms/uid-atc/toolchain/ --acl public-read
+          - deploy:
+              command: aws s3 cp /tmp/grisp_toolchain_*.tar.gz s3://grisp/platforms/uid-atc/toolchain/ --acl public-read
 workflows:
     version: 2
     build-deploy:
