@@ -19,8 +19,8 @@ jobs:
               name: Disable parallelism during gcc build due to RAM limit at CircleCI
               command: 'sed -i "s/%define with_threads 1/%define with_threads 0/" ${TOOLCHAIN_PATH}/rtems-source-builder/rtems/config/tools/rtems-gcc-7.1.0-newlib-2.5.0.20170623-1.cfg'
           - run:
-              command: cd $TOOLCHAIN_PATH; make all
-              no_output_timeout: 120m
+              command: cd $TOOLCHAIN_PATH; make
+              no_output_timeout: 90m
           - persist_to_workspace:
               root: /opt
               paths:
@@ -33,11 +33,11 @@ jobs:
           - attach_workspace:
               at: /opt
           - run:
-              command: "GRISP_TOOLCHAIN_REVISION=$(cat /opt/grisp/*/*/*/rtems-install/rtems/5/GRISP_TOOLCHAIN_REVISION) &&
+              command: "GRISP_TOOLCHAIN_REVISION=$(cat /opt/grisp/*/*/*/rtems-4.12/GRISP_TOOLCHAIN_REVISION) &&
               tar -czf /tmp/grisp_toolchain_powerpc-rtems4_Linux_$GRISP_TOOLCHAIN_REVISION.tar.gz ."
               working_directory: /opt
-          - deploy:
-              command: aws s3 cp /tmp/grisp_toolchain_*.tar.gz s3://grisp/platforms/grisp_base/toolchain/ --acl public-read
+#          - deploy:
+#              command: aws s3 cp /tmp/grisp_toolchain_*.tar.gz s3://grisp/platforms/uid-atc/toolchain/ --acl public-read
 workflows:
     version: 2
     build-deploy:

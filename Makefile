@@ -1,14 +1,19 @@
 PREFIX = $(PWD)/rtems-4.12
+TOOLCHAIN_REVISION := $(shell git rev-parse HEAD)
+
 
 .PHONY: libbsd libyaffs2 libinih libdemo libbed quicc libuid
 
-all: git rsb bsp libbsd libyaffs2 libinih libdemo libbed quicc libuid
+all: git rsb add-rev bsp libbsd libyaffs2 libinih libdemo libbed quicc libuid
 
 git:
 	git submodule update --init
 
 rsb:
 	cd rtems-source-builder/rtems && ../source-builder/sb-set-builder --prefix=$(PREFIX) 4.12/rtems-powerpc
+
+add-rev:
+	echo "${TOOLCHAIN_REVISION}" > "${PREFIX}/GRISP_TOOLCHAIN_REVISION"
 
 bsp:
 	cd rtems && PATH="$(PREFIX)/bin:$$PATH" ./bootstrap
