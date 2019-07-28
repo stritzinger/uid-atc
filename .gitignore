@@ -1,2 +1,3 @@
 rtems-4.12
 build/.waf*
+build/b-br_uid/*
